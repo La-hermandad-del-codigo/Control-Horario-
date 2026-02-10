@@ -11,7 +11,6 @@ export default function Dashboard() {
         activeSession,
         elapsedTime,
         isPaused,
-        pauseCount,
         startSession,
         pauseSession,
         resumeSession,
@@ -19,7 +18,6 @@ export default function Dashboard() {
     } = useSession();
 
     const [isEndModalOpen, setIsEndModalOpen] = useState(false);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const handleStart = async () => {
         try {
@@ -53,7 +51,6 @@ export default function Dashboard() {
         try {
             await endSession();
             setIsEndModalOpen(false);
-            setRefreshTrigger(prev => prev + 1);
         } catch (e) {
             alert(e);
         }
@@ -165,7 +162,7 @@ export default function Dashboard() {
                         <Coffee size={24} />
                     </div>
                     <p className="text-gray-400 text-sm mb-1">Pausas Hoy</p>
-                    <h3 className="text-2xl font-bold text-white">{pauseCount ?? '--'}</h3>
+                    <h3 className="text-2xl font-bold text-white">--</h3>
                 </div>
 
                 <div className="glass-card p-6 flex flex-col items-center justify-center">
@@ -178,7 +175,7 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-12">
-                <HistoryList refreshTrigger={refreshTrigger} />
+                <HistoryList />
             </div>
 
             {/* Confirmation Modal */}

@@ -11,7 +11,7 @@ export function useHistory() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const loadSessions = useCallback(async (limit: number = 50) => {
+    const loadSessions = useCallback(async (startDate?: Date, endDate?: Date) => {
         try {
             setLoading(true);
             setError(null);
@@ -23,8 +23,18 @@ export function useHistory() {
                 .select('*, work_pauses(count)')
                 .eq('user_id', user.id)
                 .eq('status', 'completed')
-                .order('start_time', { ascending: false })
-                .limit(limit);
+                .order('start_time', { ascending: false });
+
+            if (startDate) {
+                query = query.gte('start_time', startDate.toISOString());
+            }
+
+            if (endDate) {
+                // End of day
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                query = query.lte('start_time', end.toISOString());
+            }
 
             const { data, error } = await query;
 
