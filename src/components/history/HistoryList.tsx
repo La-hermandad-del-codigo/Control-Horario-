@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useHistory } from '../../hooks/useHistory';
-import { Calendar, Trash2, Edit2, Filter, X } from 'lucide-react';
+import { Trash2, Edit2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import type { Database } from '../../types/database.types';
 
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
 
-export const HistoryList = () => {
+interface HistoryListProps {
+    refreshTrigger?: number;
+}
+
+export const HistoryList = ({ refreshTrigger = 0 }: HistoryListProps) => {
     const { sessions, loading, loadSessions, deleteSession, updateSession } = useHistory();
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
 
     const [editingSession, setEditingSession] = useState<WorkSession | null>(null);
     const [editForm, setEditForm] = useState({
@@ -19,21 +21,8 @@ export const HistoryList = () => {
     });
 
     useEffect(() => {
-        loadSessions();
-    }, [loadSessions]);
-
-    const handleFilter = () => {
-        loadSessions(
-            startDate ? new Date(startDate) : undefined,
-            endDate ? new Date(endDate) : undefined
-        );
-    };
-
-    const clearFilters = () => {
-        setStartDate('');
-        setEndDate('');
-        loadSessions();
-    };
+        loadSessions(5);
+    }, [loadSessions, refreshTrigger]);
 
     const handleDelete = async (id: string) => {
         if (window.confirm('¿Estás seguro de eliminar esta sesión?')) {
@@ -73,52 +62,15 @@ export const HistoryList = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">Historial</h2>
-
-                <div className="flex flex-wrap gap-2 items-center bg-card-bg/30 p-2 rounded-lg border border-white/5">
-                    <div className="flex items-center gap-2">
-                        <Calendar size={16} className="text-gray-400" />
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            className="bg-transparent text-sm text-white focus:outline-none border-b border-gray-600 focus:border-primary-lime w-32"
-                        />
-                    </div>
-                    <span className="text-gray-500">-</span>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={e => setEndDate(e.target.value)}
-                            className="bg-transparent text-sm text-white focus:outline-none border-b border-gray-600 focus:border-primary-lime w-32"
-                        />
-                    </div>
-                    <button
-                        onClick={handleFilter}
-                        className="p-2 bg-primary-lime/20 text-primary-lime rounded-lg hover:bg-primary-lime/30 transition-colors"
-                        title="Filtrar"
-                    >
-                        <Filter size={16} />
-                    </button>
-                    {(startDate || endDate) && (
-                        <button
-                            onClick={clearFilters}
-                            className="p-2 text-gray-400 hover:text-white transition-colors"
-                            title="Limpiar filtros"
-                        >
-                            <X size={16} />
-                        </button>
-                    )}
-                </div>
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">Historial de Sesiones</h2>
             </div>
 
             {loading ? (
                 <div className="text-center py-10 text-gray-400">Cargando historial...</div>
             ) : sessions.length === 0 ? (
                 <div className="text-center py-10 text-gray-500 glass-card">
-                    No hay sesiones registradas en este período.
+                    No hay sesiones recientes.
                 </div>
             ) : (
                 <div className="grid gap-4">
