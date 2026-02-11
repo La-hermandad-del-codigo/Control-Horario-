@@ -170,10 +170,10 @@ export function useSession() {
     };
 
     const pauseSession = async () => {
+        //verifica que la sesion este activa
         if (!activeSession) return;
         if (isPaused || loading) return;
 
-        // 🔒 bloqueo inmediato
         setIsPaused(true);
         setLoading(true);
 
@@ -209,40 +209,42 @@ export function useSession() {
 
 
     const resumeSession = async () => {
-        if (!activeSession) throw new Error("No active session");
-        if (!isPaused) throw new Error("Session not paused");
+        if (!activeSession || !isPaused || loading) return;
 
-        // 1. Find active pause
-        const { data: lastPause, error: findError } = await supabase
-            .from('work_pauses')
-            .select('id')
-            .eq('session_id', activeSession.id)
-            .is('pause_end', null)
-            .order('pause_start', { ascending: false })
-            .limit(1)
-            .single();
+        // 🔒 desbloqueo inmediato en UI
+        setIsPaused(false);
+        setLoading(true);
 
-        if (findError) throw findError;
+        try {
+            // 1️⃣ Cerrar pausa activa directamente (sin buscar primero)
+            const { error: updatePauseError } = await supabase
+                .from('work_pauses')
+                .update({ pause_end: new Date().toISOString() })
+                .eq('session_id', activeSession.id)
+                .is('pause_end', null);
 
-        // 2. Close pause
-        const { error: updatePauseError } = await supabase
-            .from('work_pauses')
-            .update({ pause_end: new Date().toISOString() })
-            .eq('id', lastPause.id);
+            if (updatePauseError) throw updatePauseError;
 
-        if (updatePauseError) throw updatePauseError;
+            // 2️⃣ Actualizar estado sesión
+            const { error: sessionError } = await supabase
+                .from('work_sessions')
+                .update({ status: 'active' })
+                .eq('id', activeSession.id);
 
-        // 3. Update session status
-        const { error: sessionError } = await supabase
-            .from('work_sessions')
-            .update({ status: 'active' })
-            .eq('id', activeSession.id);
+            if (sessionError) throw sessionError;
 
-        if (sessionError) throw sessionError;
+            // 🔄 opcional: NO recargar sesión completa
+            // await loadActiveSession(); ← puedes quitarlo
+        } catch (error) {
+            console.error(error);
 
-        // Reload to get full state
-        await loadActiveSession();
+            // rollback si falla
+            setIsPaused(true);
+        } finally {
+            setLoading(false);
+        }
     };
+
 
     const endSession = async () => {
         if (!activeSession) throw new Error("No active session");
