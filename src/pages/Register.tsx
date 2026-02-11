@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Link, useNavigate } from 'react-router-dom';
-import { Loader2, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function Register() {
     const [fullName, setFullName] = useState('');
@@ -10,9 +10,31 @@ export default function Register() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const { signUp } = useAuth();
     const navigate = useNavigate();
+
+    const passwordStrength = useMemo(() => {
+        if (!password) return { level: 0, label: '', color: '' };
+        let score = 0;
+        if (password.length >= 6) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
+
+        const levels: Record<number, { label: string; color: string }> = {
+            0: { label: 'Muy débil', color: 'bg-red-500' },
+            1: { label: 'Débil', color: 'bg-orange-500' },
+            2: { label: 'Media', color: 'bg-yellow-500' },
+            3: { label: 'Fuerte', color: 'bg-primary-lime' },
+            4: { label: 'Muy fuerte', color: 'bg-green-500' },
+        };
+
+        const { label, color } = levels[score];
+        return { level: score, label, color };
+    }, [password]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,6 +47,11 @@ export default function Register() {
 
         if (password.length < 6) {
             setError('La contraseña debe tener al menos 6 caracteres');
+            return;
+        }
+
+        if (!/[A-Z]/.test(password)) {
+            setError('La contraseña debe contener al menos una letra mayúscula');
             return;
         }
 
@@ -73,6 +100,7 @@ export default function Register() {
                                     required
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
+                                    autoComplete="off"
                                     className="w-full bg-dark-bg/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-lime/50 focus:ring-1 focus:ring-primary-lime/50 transition-all"
                                     placeholder="Juan Pérez"
                                 />
@@ -88,6 +116,7 @@ export default function Register() {
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    autoComplete="off"
                                     className="w-full bg-dark-bg/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-lime/50 focus:ring-1 focus:ring-primary-lime/50 transition-all"
                                     placeholder="tu@email.com"
                                 />
@@ -99,14 +128,44 @@ export default function Register() {
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-dark-bg/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-lime/50 focus:ring-1 focus:ring-primary-lime/50 transition-all"
+                                    autoComplete="new-password"
+                                    className="w-full bg-dark-bg/50 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-white placeholder-gray-600 focus:outline-none focus:border-primary-lime/50 focus:ring-1 focus:ring-primary-lime/50 transition-all"
                                     placeholder="••••••••"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
+                            {password && (
+                                <div className="mt-2 space-y-1">
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div
+                                                key={i}
+                                                className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= passwordStrength.level
+                                                    ? passwordStrength.color
+                                                    : 'bg-gray-700'
+                                                    }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className={`text-xs font-medium transition-colors ${passwordStrength.level <= 1 ? 'text-red-400'
+                                        : passwordStrength.level === 2 ? 'text-yellow-400'
+                                            : 'text-green-400'
+                                        }`}>
+                                        {passwordStrength.label}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -114,13 +173,22 @@ export default function Register() {
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                                 <input
-                                    type="password"
+                                    type={showConfirmPassword ? 'text' : 'password'}
                                     required
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full bg-dark-bg/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-lime/50 focus:ring-1 focus:ring-primary-lime/50 transition-all"
+                                    autoComplete="new-password"
+                                    className="w-full bg-dark-bg/50 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-white placeholder-gray-600 focus:outline-none focus:border-primary-lime/50 focus:ring-1 focus:ring-primary-lime/50 transition-all"
                                     placeholder="••••••••"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                         </div>
 
