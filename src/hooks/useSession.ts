@@ -170,30 +170,43 @@ export function useSession() {
     };
 
     const pauseSession = async () => {
-        if (!activeSession) throw new Error("No active session");
-        if (isPaused) throw new Error("Session already paused");
+        if (!activeSession) return;
+        if (isPaused || loading) return;
 
-        // 1. Create pause record
-        const { error: pauseError } = await supabase
-            .from('work_pauses')
-            .insert({
-                session_id: activeSession.id,
-                pause_start: new Date().toISOString(),
-            });
+        // 🔒 bloqueo inmediato
+        setIsPaused(true);
+        setLoading(true);
 
-        if (pauseError) throw pauseError;
+        try {
+            // 1. Crear pausa
+            const { error: pauseError } = await supabase
+                .from('work_pauses')
+                .insert({
+                    session_id: activeSession.id,
+                    pause_start: new Date().toISOString(),
+                });
 
-        // 2. Update session status
-        const { error: sessionError } = await supabase
-            .from('work_sessions')
-            .update({ status: 'paused' })
-            .eq('id', activeSession.id);
+            if (pauseError) throw pauseError;
 
-        if (sessionError) throw sessionError;
+            // 2. Actualizar estado de sesión
+            const { error: sessionError } = await supabase
+                .from('work_sessions')
+                .update({ status: 'paused' })
+                .eq('id', activeSession.id);
 
-        // Reload to get the new pause record
-        await loadActiveSession();
+            if (sessionError) throw sessionError;
+
+            await loadActiveSession();
+        } catch (error) {
+            console.error(error);
+
+            // rollback si falla
+            setIsPaused(false);
+        } finally {
+            setLoading(false);
+        }
     };
+
 
     const resumeSession = async () => {
         if (!activeSession) throw new Error("No active session");
@@ -280,7 +293,7 @@ export function useSession() {
     return {
         activeSession,
         elapsedTime: formatTime(elapsedTime),
-        pauseCount: activeSession?.work_pauses?.length || 0,
+        pauseCount: activeSession?.work_pauses?.length ?? 0,
         isPaused,
         loading,
         startSession,
