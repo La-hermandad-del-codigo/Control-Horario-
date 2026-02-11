@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/database.types';
+import { formatTime } from '../utils/time';
 
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'] & {
     work_pauses: Database['public']['Tables']['work_pauses']['Row'][];
@@ -14,12 +15,6 @@ export function useSession() {
     const timerRef = useRef<number | null>(null);
 
     // Helper to format time HH:MM:SS
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
 
     const calculateElapsedTime = useCallback((session: WorkSession) => {
         const start = new Date(session.start_time).getTime();
@@ -211,12 +206,12 @@ export function useSession() {
     const resumeSession = async () => {
         if (!activeSession || !isPaused || loading) return;
 
-        // 🔒 desbloqueo inmediato en UI
+        // desbloqueo inmediato en UI
         setIsPaused(false);
         setLoading(true);
 
         try {
-            // 1️⃣ Cerrar pausa activa directamente (sin buscar primero)
+            // Cerrar pausa activa directamente
             const { error: updatePauseError } = await supabase
                 .from('work_pauses')
                 .update({ pause_end: new Date().toISOString() })
@@ -225,7 +220,7 @@ export function useSession() {
 
             if (updatePauseError) throw updatePauseError;
 
-            // 2️⃣ Actualizar estado sesión
+            // Actualizar estado sesión
             const { error: sessionError } = await supabase
                 .from('work_sessions')
                 .update({ status: 'active' })
@@ -233,8 +228,6 @@ export function useSession() {
 
             if (sessionError) throw sessionError;
 
-            // 🔄 opcional: NO recargar sesión completa
-            // await loadActiveSession(); ← puedes quitarlo
         } catch (error) {
             console.error(error);
 
@@ -294,6 +287,7 @@ export function useSession() {
 
     return {
         activeSession,
+        elapsedSeconds: elapsedTime,
         elapsedTime: formatTime(elapsedTime),
         pauseCount: activeSession?.work_pauses?.length ?? 0,
         isPaused,
