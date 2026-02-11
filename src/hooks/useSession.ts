@@ -119,22 +119,24 @@ export function useSession() {
     }, [checkAbandonedSessions, loadActiveSession]);
 
     useEffect(() => {
-        if (activeSession && !isPaused) {
-            timerRef.current = window.setInterval(() => {
-                setElapsedTime(prev => prev + 1);
-            }, 1000);
-        } else {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        }
+        if (!activeSession || isPaused) return;
+
+        calculateElapsedTime(activeSession);
+
+        timerRef.current = window.setInterval(() => {
+            if (!activeSession || isPaused) return;
+            calculateElapsedTime(activeSession);
+        }, 1000);
 
         return () => {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
+                timerRef.current = null;
             }
         };
-    }, [activeSession, isPaused]);
+    }, [activeSession, isPaused, calculateElapsedTime]);
+
+
 
     const startSession = async () => {
         if (activeSession) throw new Error("Ya hay una sesión activa");
@@ -168,6 +170,13 @@ export function useSession() {
         //verifica que la sesion este activa
         if (!activeSession) return;
         if (isPaused || loading) return;
+
+        calculateElapsedTime(activeSession);
+
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
 
         setIsPaused(true);
         setLoading(true);
@@ -206,12 +215,10 @@ export function useSession() {
     const resumeSession = async () => {
         if (!activeSession || !isPaused || loading) return;
 
-        // desbloqueo inmediato en UI
         setIsPaused(false);
         setLoading(true);
 
         try {
-            // Cerrar pausa activa directamente
             const { error: updatePauseError } = await supabase
                 .from('work_pauses')
                 .update({ pause_end: new Date().toISOString() })
@@ -220,7 +227,6 @@ export function useSession() {
 
             if (updatePauseError) throw updatePauseError;
 
-            // Actualizar estado sesión
             const { error: sessionError } = await supabase
                 .from('work_sessions')
                 .update({ status: 'active' })
@@ -228,10 +234,11 @@ export function useSession() {
 
             if (sessionError) throw sessionError;
 
+            // 🔥 ESTA LÍNEA FALTABA
+            await loadActiveSession();
+
         } catch (error) {
             console.error(error);
-
-            // rollback si falla
             setIsPaused(true);
         } finally {
             setLoading(false);
@@ -239,9 +246,16 @@ export function useSession() {
     };
 
 
+
     const endSession = async () => {
         if (!activeSession) throw new Error("No active session");
 
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+
+        setIsPaused(true);
         // Calculate final net time
         // Since loadActiveSession fetches pauses, activeSession should have them.
         // But to be super safe and ensuring we have latest, we can re-calculate or just trust formatTime(elapsedTime) if logic is sound.
