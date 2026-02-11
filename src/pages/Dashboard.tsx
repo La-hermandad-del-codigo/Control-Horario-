@@ -11,6 +11,7 @@ export default function Dashboard() {
         activeSession,
         elapsedTime,
         isPaused,
+        loading,
         pauseCount,
         startSession,
         pauseSession,
@@ -126,6 +127,7 @@ export default function Dashboard() {
                                 ) : (
                                     <button
                                         onClick={handlePause}
+                                        disabled={isPaused || loading}
                                         className="flex flex-col items-center gap-2 group"
                                     >
                                         <div className="w-16 h-16 rounded-2xl bg-card-bg border border-white/10 hover:border-yellow-500/50 hover:bg-yellow-500/10 flex items-center justify-center text-white transition-all hover:scale-110">
