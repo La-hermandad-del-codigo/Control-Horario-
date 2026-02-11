@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useSession } from '../hooks/useSession';
-import { Play, Pause, Square, Power, Clock, Coffee } from 'lucide-react';
+import { Play, Pause, Square, Clock, Coffee } from 'lucide-react';
 import { HistoryList } from '../components/history/HistoryList';
 import { Modal } from '../components/ui/Modal';
 
@@ -150,8 +150,8 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Quick Stats Row (Placeholder for now) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Quick Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                 <div className="glass-card p-6 flex flex-col items-center justify-center">
                     <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
                         <Clock size={24} />
@@ -166,14 +166,6 @@ export default function Dashboard() {
                     </div>
                     <p className="text-gray-400 text-sm mb-1">Pausas Hoy</p>
                     <h3 className="text-2xl font-bold text-white">{pauseCount ?? '--'}</h3>
-                </div>
-
-                <div className="glass-card p-6 flex flex-col items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-400 mb-3">
-                        <Power size={24} />
-                    </div>
-                    <p className="text-gray-400 text-sm mb-1">Estado</p>
-                    <h3 className="text-2xl font-bold text-white">Online</h3>
                 </div>
             </div>
 
