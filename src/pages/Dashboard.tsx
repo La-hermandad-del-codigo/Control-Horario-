@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useSession } from '../hooks/useSession';
-import { Play, Pause, Square, Clock, Coffee } from 'lucide-react';
+import { Play, Pause, Square, Clock, Coffee, AlertTriangle } from 'lucide-react';
 import { HistoryList } from '../components/history/HistoryList';
 import { Modal } from '../components/ui/Modal';
 
@@ -9,12 +9,15 @@ export default function Dashboard() {
     const { user } = useAuth();
     const {
         activeSession,
+        abandonedSession,
         elapsedTime,
         isPaused,
         startSession,
         pauseSession,
         resumeSession,
-        endSession
+        endSession,
+        recoverSession,
+        discardSession
     } = useSession();
 
     const [isEndModalOpen, setIsEndModalOpen] = useState(false);
@@ -193,6 +196,42 @@ export default function Dashboard() {
                             className="px-6 py-2 bg-red-500/10 border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg font-medium transition-all"
                         >
                             Finalizar
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* ⚠️ Abandoned Session Recovery Modal */}
+            <Modal
+                isOpen={!!abandonedSession}
+                onClose={() => { }} // Prevent closing by clicking outside
+                title="Sesión Abierta Detectada"
+            >
+                <div className="flex flex-col items-center text-center space-y-6 py-4">
+                    <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-2">
+                        <AlertTriangle size={32} className="text-yellow-500" />
+                    </div>
+
+                    <div className="space-y-2">
+                        <h4 className="text-lg font-semibold text-white">¿Deseas recuperar tu sesión anterior?</h4>
+                        <p className="text-gray-400 max-w-sm mx-auto">
+                            Tienes una sesión que quedó abierta hace <span className="text-primary-lime font-mono font-bold">{abandonedSession?.timeMessage}</span>.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-4">
+                        <button
+                            onClick={discardSession}
+                            className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+                        >
+                            Ignorar y comenzar nueva
+                        </button>
+                        <button
+                            onClick={recoverSession}
+                            className="px-6 py-3 bg-primary-lime hover:bg-secondary-lime text-dark-bg rounded-xl font-bold transition-all shadow-lg shadow-primary-lime/20 flex items-center justify-center gap-2"
+                        >
+                            <Play size={18} fill="currentColor" />
+                            Recuperar Sesión
                         </button>
                     </div>
                 </div>

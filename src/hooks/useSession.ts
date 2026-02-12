@@ -12,6 +12,9 @@ export function useSession() {
     const [isPaused, setIsPaused] = useState(false);
     const [loading, setLoading] = useState(true);
     const timerRef = useRef<number | null>(null);
+    const hasInitialized = useRef(false);
+
+    const [abandonedSession, setAbandonedSession] = useState<{ id: string; timeMessage: string } | null>(null);
 
     // Helper to format time HH:MM:SS
     const formatTime = (seconds: number) => {
@@ -89,39 +92,85 @@ export function useSession() {
     }, [calculateElapsedTime]);
 
     const checkAbandonedSessions = useCallback(async () => {
-        const { data, error } = await supabase.rpc('check_abandoned_sessions');
-        if (error) {
-            console.error('Error checking abandoned sessions:', error);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
             return;
         }
 
-        if (data && data.length > 0) {
-            const session = data[0];
-            const shouldRecover = window.confirm(
-                `Tienes una sesión abierta desde hace ${Math.floor(session.hours_since_start)} horas. ¿Deseas recuperarla?`
-            );
+        const { data, error } = await supabase
+            .from('work_sessions')
+            .select('id, start_time')
+            .eq('user_id', user.id)
+            .in('status', ['active', 'paused'])
+            .order('created_at', { ascending: false })
+            .maybeSingle();
 
-            if (shouldRecover) {
-                await supabase
-                    .from('work_sessions')
-                    .update({ status: 'active' })
-                    .eq('id', session.session_id);
+        if (error) {
+            console.error('Error checking sessions:', error);
+            return;
+        }
+
+        if (data) {
+            const msSinceStart = Date.now() - new Date(data.start_time).getTime();
+            const hoursSinceStart = msSinceStart / (1000 * 3600);
+
+            let timeMessage: string;
+            if (hoursSinceStart >= 1) {
+                timeMessage = `${Math.floor(hoursSinceStart)} horas`;
             } else {
-                await supabase
-                    .from('work_sessions')
-                    .update({
-                        status: 'abandoned',
-                        end_time: new Date().toISOString()
-                    })
-                    .eq('id', session.session_id);
+                const minutes = Math.floor(msSinceStart / (1000 * 60));
+                timeMessage = `${minutes} minutos`;
             }
+
+            // Instead of confirm, set state for UI
+            setAbandonedSession({
+                id: data.id,
+                timeMessage
+            });
+        } else {
+            // If no abandoned session found, load normal session flow
             await loadActiveSession();
         }
     }, [loadActiveSession]);
 
+    const recoverSession = async () => {
+        if (!abandonedSession) return;
+
+        // Simple recovery: just set status to active
+        await supabase
+            .from('work_sessions')
+            .update({ status: 'active' })
+            .eq('id', abandonedSession.id);
+
+        setAbandonedSession(null);
+        await loadActiveSession();
+    };
+
+    const discardSession = async () => {
+        if (!abandonedSession) return;
+
+        await supabase
+            .from('work_sessions')
+            .update({
+                status: 'abandoned',
+                end_time: new Date().toISOString()
+            })
+            .eq('id', abandonedSession.id);
+
+        setAbandonedSession(null);
+        await loadActiveSession();
+    };
+
     useEffect(() => {
-        checkAbandonedSessions().then(() => loadActiveSession());
-    }, [checkAbandonedSessions, loadActiveSession]);
+        if (hasInitialized.current) return;
+        hasInitialized.current = true;
+
+        checkAbandonedSessions();
+
+        return () => {
+            hasInitialized.current = false;
+        };
+    }, [checkAbandonedSessions]);
 
     useEffect(() => {
         if (activeSession && !isPaused) {
@@ -258,7 +307,7 @@ export function useSession() {
 
         const start = new Date(activeSession.start_time).getTime();
         const end = Date.now();
-        const netWorkSeconds = Math.floor(((end - start) - totalPauseTimeMs) / 1000);
+        const netWorkSeconds = Math.max(0, Math.floor(((end - start) - totalPauseTimeMs) / 1000));
         const formattedDuration = formatTime(netWorkSeconds);
 
         const { error } = await supabase
@@ -279,6 +328,7 @@ export function useSession() {
 
     return {
         activeSession,
+        abandonedSession,
         elapsedTime: formatTime(elapsedTime),
         pauseCount: activeSession?.work_pauses?.length || 0,
         isPaused,
@@ -286,6 +336,8 @@ export function useSession() {
         startSession,
         pauseSession,
         resumeSession,
-        endSession
+        endSession,
+        recoverSession,
+        discardSession
     };
 }
