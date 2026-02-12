@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/database.types';
+import { formatTime } from '../utils/time';
 
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'] & {
     work_pauses: Database['public']['Tables']['work_pauses']['Row'][];
@@ -17,12 +18,6 @@ export function useSession() {
     const [abandonedSession, setAbandonedSession] = useState<{ id: string; timeMessage: string } | null>(null);
 
     // Helper to format time HH:MM:SS
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
 
     const calculateElapsedTime = useCallback((session: WorkSession) => {
         const start = new Date(session.start_time).getTime();
@@ -173,22 +168,24 @@ export function useSession() {
     }, [checkAbandonedSessions]);
 
     useEffect(() => {
-        if (activeSession && !isPaused) {
-            timerRef.current = window.setInterval(() => {
-                setElapsedTime(prev => prev + 1);
-            }, 1000);
-        } else {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        }
+        if (!activeSession || isPaused) return;
+
+        calculateElapsedTime(activeSession);
+
+        timerRef.current = window.setInterval(() => {
+            if (!activeSession || isPaused) return;
+            calculateElapsedTime(activeSession);
+        }, 1000);
 
         return () => {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
+                timerRef.current = null;
             }
         };
-    }, [activeSession, isPaused]);
+    }, [activeSession, isPaused, calculateElapsedTime]);
+
+
 
     const startSession = async () => {
         if (activeSession) throw new Error("Ya hay una sesión activa");
@@ -219,70 +216,95 @@ export function useSession() {
     };
 
     const pauseSession = async () => {
-        if (!activeSession) throw new Error("No active session");
-        if (isPaused) throw new Error("Session already paused");
+        //verifica que la sesion este activa
+        if (!activeSession) return;
+        if (isPaused || loading) return;
 
-        // 1. Create pause record
-        const { error: pauseError } = await supabase
-            .from('work_pauses')
-            .insert({
-                session_id: activeSession.id,
-                pause_start: new Date().toISOString(),
-            });
+        calculateElapsedTime(activeSession);
 
-        if (pauseError) throw pauseError;
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
 
-        // 2. Update session status
-        const { error: sessionError } = await supabase
-            .from('work_sessions')
-            .update({ status: 'paused' })
-            .eq('id', activeSession.id);
+        setIsPaused(true);
+        setLoading(true);
 
-        if (sessionError) throw sessionError;
+        try {
+            // 1. Crear pausa
+            const { error: pauseError } = await supabase
+                .from('work_pauses')
+                .insert({
+                    session_id: activeSession.id,
+                    pause_start: new Date().toISOString(),
+                });
 
-        // Reload to get the new pause record
-        await loadActiveSession();
+            if (pauseError) throw pauseError;
+
+            // 2. Actualizar estado de sesión
+            const { error: sessionError } = await supabase
+                .from('work_sessions')
+                .update({ status: 'paused' })
+                .eq('id', activeSession.id);
+
+            if (sessionError) throw sessionError;
+
+            await loadActiveSession();
+        } catch (error) {
+            console.error(error);
+
+            // rollback si falla
+            setIsPaused(false);
+        } finally {
+            setLoading(false);
+        }
     };
+
 
     const resumeSession = async () => {
-        if (!activeSession) throw new Error("No active session");
-        if (!isPaused) throw new Error("Session not paused");
+        if (!activeSession || !isPaused || loading) return;
 
-        // 1. Find active pause
-        const { data: lastPause, error: findError } = await supabase
-            .from('work_pauses')
-            .select('id')
-            .eq('session_id', activeSession.id)
-            .is('pause_end', null)
-            .order('pause_start', { ascending: false })
-            .limit(1)
-            .single();
+        setIsPaused(false);
+        setLoading(true);
 
-        if (findError) throw findError;
+        try {
+            const { error: updatePauseError } = await supabase
+                .from('work_pauses')
+                .update({ pause_end: new Date().toISOString() })
+                .eq('session_id', activeSession.id)
+                .is('pause_end', null);
 
-        // 2. Close pause
-        const { error: updatePauseError } = await supabase
-            .from('work_pauses')
-            .update({ pause_end: new Date().toISOString() })
-            .eq('id', lastPause.id);
+            if (updatePauseError) throw updatePauseError;
 
-        if (updatePauseError) throw updatePauseError;
+            const { error: sessionError } = await supabase
+                .from('work_sessions')
+                .update({ status: 'active' })
+                .eq('id', activeSession.id);
 
-        // 3. Update session status
-        const { error: sessionError } = await supabase
-            .from('work_sessions')
-            .update({ status: 'active' })
-            .eq('id', activeSession.id);
+            if (sessionError) throw sessionError;
 
-        if (sessionError) throw sessionError;
+            // 🔥 ESTA LÍNEA FALTABA
+            await loadActiveSession();
 
-        // Reload to get full state
-        await loadActiveSession();
+        } catch (error) {
+            console.error(error);
+            setIsPaused(true);
+        } finally {
+            setLoading(false);
+        }
     };
+
+
 
     const endSession = async () => {
         if (!activeSession) throw new Error("No active session");
 
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+
+        setIsPaused(true);
         // Calculate final net time
         // Since loadActiveSession fetches pauses, activeSession should have them.
         // But to be super safe and ensuring we have latest, we can re-calculate or just trust formatTime(elapsedTime) if logic is sound.
@@ -329,8 +351,9 @@ export function useSession() {
     return {
         activeSession,
         abandonedSession,
+        elapsedSeconds: elapsedTime,
         elapsedTime: formatTime(elapsedTime),
-        pauseCount: activeSession?.work_pauses?.length || 0,
+        pauseCount: activeSession?.work_pauses?.length ?? 0,
         isPaused,
         loading,
         startSession,
