@@ -5,6 +5,8 @@ import { useSession } from '../hooks/useSession';
 import { Play, Pause, Square, Clock, Coffee, ClipboardList } from 'lucide-react';
 import { HistoryList } from '../components/history/HistoryList';
 import { Modal } from '../components/ui/Modal';
+import { formatTime } from '../utils/time';
+import { useWeeklyStats } from '../hooks/useWeeklyStats';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -12,6 +14,7 @@ export default function Dashboard() {
     const {
         activeSession,
         elapsedTime,
+        elapsedSeconds,
         isPaused,
         loading,
         pauseCount,
@@ -20,6 +23,11 @@ export default function Dashboard() {
         resumeSession,
         endSession
     } = useSession();
+
+    const { totalWeeklySeconds } = useWeeklyStats({
+        elapsedSeconds,
+        hasActiveSession: !!activeSession
+    });
 
     const [isEndModalOpen, setIsEndModalOpen] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -160,8 +168,8 @@ export default function Dashboard() {
                     <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
                         <Clock size={24} />
                     </div>
-                    <p className="text-gray-400 text-sm mb-1">Horas Hoy</p>
-                    <h3 className="text-2xl font-bold text-white">--:--</h3>
+                    <p className="text-gray-400 text-sm mb-1">Horas Semanales</p>
+                    <h3 className="text-2xl font-bold text-white">{formatTime(totalWeeklySeconds)}</h3>
                 </div>
 
                 <div className="glass-card p-6 flex flex-col items-center justify-center">

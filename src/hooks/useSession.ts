@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/database.types';
+import { formatTime } from '../utils/time';
 
 type WorkSession = Database['public']['Tables']['work_sessions']['Row'] & {
     work_pauses: Database['public']['Tables']['work_pauses']['Row'][];
@@ -14,12 +15,6 @@ export function useSession() {
     const timerRef = useRef<number | null>(null);
 
     // Helper to format time HH:MM:SS
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
 
     const calculateElapsedTime = useCallback((session: WorkSession) => {
         const start = new Date(session.start_time).getTime();
@@ -124,22 +119,24 @@ export function useSession() {
     }, [checkAbandonedSessions, loadActiveSession]);
 
     useEffect(() => {
-        if (activeSession && !isPaused) {
-            timerRef.current = window.setInterval(() => {
-                setElapsedTime(prev => prev + 1);
-            }, 1000);
-        } else {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        }
+        if (!activeSession || isPaused) return;
+
+        calculateElapsedTime(activeSession);
+
+        timerRef.current = window.setInterval(() => {
+            if (!activeSession || isPaused) return;
+            calculateElapsedTime(activeSession);
+        }, 1000);
 
         return () => {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
+                timerRef.current = null;
             }
         };
-    }, [activeSession, isPaused]);
+    }, [activeSession, isPaused, calculateElapsedTime]);
+
+
 
     const startSession = async () => {
         if (activeSession) throw new Error("Ya hay una sesión activa");
@@ -173,6 +170,13 @@ export function useSession() {
         //verifica que la sesion este activa
         if (!activeSession) return;
         if (isPaused || loading) return;
+
+        calculateElapsedTime(activeSession);
+
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
 
         setIsPaused(true);
         setLoading(true);
@@ -211,12 +215,10 @@ export function useSession() {
     const resumeSession = async () => {
         if (!activeSession || !isPaused || loading) return;
 
-        // 🔒 desbloqueo inmediato en UI
         setIsPaused(false);
         setLoading(true);
 
         try {
-            // 1️⃣ Cerrar pausa activa directamente (sin buscar primero)
             const { error: updatePauseError } = await supabase
                 .from('work_pauses')
                 .update({ pause_end: new Date().toISOString() })
@@ -225,7 +227,6 @@ export function useSession() {
 
             if (updatePauseError) throw updatePauseError;
 
-            // 2️⃣ Actualizar estado sesión
             const { error: sessionError } = await supabase
                 .from('work_sessions')
                 .update({ status: 'active' })
@@ -233,12 +234,11 @@ export function useSession() {
 
             if (sessionError) throw sessionError;
 
-            // 🔄 opcional: NO recargar sesión completa
-            // await loadActiveSession(); ← puedes quitarlo
+            // 🔥 ESTA LÍNEA FALTABA
+            await loadActiveSession();
+
         } catch (error) {
             console.error(error);
-
-            // rollback si falla
             setIsPaused(true);
         } finally {
             setLoading(false);
@@ -246,9 +246,16 @@ export function useSession() {
     };
 
 
+
     const endSession = async () => {
         if (!activeSession) throw new Error("No active session");
 
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+
+        setIsPaused(true);
         // Calculate final net time
         // Since loadActiveSession fetches pauses, activeSession should have them.
         // But to be super safe and ensuring we have latest, we can re-calculate or just trust formatTime(elapsedTime) if logic is sound.
@@ -294,6 +301,7 @@ export function useSession() {
 
     return {
         activeSession,
+        elapsedSeconds: elapsedTime,
         elapsedTime: formatTime(elapsedTime),
         pauseCount: activeSession?.work_pauses?.length ?? 0,
         isPaused,
