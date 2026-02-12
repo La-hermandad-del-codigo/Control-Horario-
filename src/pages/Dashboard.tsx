@@ -155,7 +155,7 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="glass-card p-6 flex flex-col items-center justify-center">
                     <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
                         <Clock size={24} />
