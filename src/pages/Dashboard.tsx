@@ -1,13 +1,15 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSession } from '../hooks/useSession';
-import { Play, Pause, Square, Clock, Coffee } from 'lucide-react';
+import { Play, Pause, Square, Clock, Coffee, ClipboardList } from 'lucide-react';
 import { HistoryList } from '../components/history/HistoryList';
 import { Modal } from '../components/ui/Modal';
 import { formatTime } from '../utils/time';
 import { useWeeklyStats } from '../hooks/useWeeklyStats';
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const {
         activeSession,
@@ -161,7 +163,7 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="glass-card p-6 flex flex-col items-center justify-center">
                     <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
                         <Clock size={24} />
@@ -177,6 +179,18 @@ export default function Dashboard() {
                     <p className="text-gray-400 text-sm mb-1">Pausas Hoy</p>
                     <h3 className="text-2xl font-bold text-white">{pauseCount ?? '--'}</h3>
                 </div>
+
+                {/* Sesiones Card */}
+                <button
+                    onClick={() => navigate('/sessions')}
+                    className="glass-card p-6 flex flex-col items-center justify-center hover:border-primary-lime/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                >
+                    <div className="w-12 h-12 rounded-full bg-primary-lime/10 flex items-center justify-center text-primary-lime mb-3 group-hover:bg-primary-lime/20 transition-colors">
+                        <ClipboardList size={24} />
+                    </div>
+                    <p className="text-gray-400 text-sm mb-1 group-hover:text-gray-300 transition-colors">Ver todas</p>
+                    <h3 className="text-2xl font-bold text-white">Sesiones</h3>
+                </button>
             </div>
 
             <div className="mt-12">
