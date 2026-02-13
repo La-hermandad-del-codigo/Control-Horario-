@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Link, useNavigate } from 'react-router-dom';
-import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, Check, X } from 'lucide-react';
 
 export default function Register() {
     const [fullName, setFullName] = useState('');
@@ -36,6 +36,27 @@ export default function Register() {
         return { level: score, label, color };
     }, [password]);
 
+    const passwordRequirements = useMemo(() => {
+        return [
+            {
+                label: 'Entre 8 y 12 caracteres',
+                met: password.length >= 8 && password.length <= 12,
+            },
+            {
+                label: 'Al menos una letra mayúscula',
+                met: /[A-Z]/.test(password),
+            },
+            {
+                label: 'Al menos un número',
+                met: /[0-9]/.test(password),
+            },
+            {
+                label: 'Al menos un carácter especial (!@#$...)',
+                met: /[^A-Za-z0-9]/.test(password),
+            },
+        ];
+    }, [password]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -45,8 +66,8 @@ export default function Register() {
             return;
         }
 
-        if (password.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres');
+        if (password.length < 8 || password.length > 12) {
+            setError('La contraseña debe tener entre 8 y 12 caracteres');
             return;
         }
 
@@ -146,7 +167,8 @@ export default function Register() {
                                 </button>
                             </div>
                             {password && (
-                                <div className="mt-2 space-y-1">
+                                <div className="mt-2 space-y-2">
+                                    {/* Strength meter bar */}
                                     <div className="flex gap-1">
                                         {[1, 2, 3, 4].map((i) => (
                                             <div
@@ -164,6 +186,32 @@ export default function Register() {
                                         }`}>
                                         {passwordStrength.label}
                                     </p>
+
+                                    {/* Password requirements checklist */}
+                                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1.5">
+                                        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Requisitos de contraseña</p>
+                                        {passwordRequirements.map((req, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`flex items-center gap-2 transition-all duration-300 ${req.met ? 'opacity-100' : 'opacity-70'
+                                                    }`}
+                                            >
+                                                <div className={`flex items-center justify-center w-4 h-4 rounded-full transition-all duration-300 ${req.met
+                                                        ? 'bg-green-500/20 text-green-400'
+                                                        : 'bg-red-500/20 text-red-400'
+                                                    }`}>
+                                                    {req.met
+                                                        ? <Check size={10} strokeWidth={3} />
+                                                        : <X size={10} strokeWidth={3} />
+                                                    }
+                                                </div>
+                                                <span className={`text-xs transition-colors duration-300 ${req.met ? 'text-green-400' : 'text-gray-500'
+                                                    }`}>
+                                                    {req.label}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
