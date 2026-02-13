@@ -13,6 +13,7 @@ export default function Dashboard() {
         activeSession,
         elapsedTime,
         isPaused,
+        loading,
         pauseCount,
         startSession,
         pauseSession,
@@ -128,6 +129,7 @@ export default function Dashboard() {
                                 ) : (
                                     <button
                                         onClick={handlePause}
+                                        disabled={isPaused || loading}
                                         className="flex flex-col items-center gap-2 group"
                                     >
                                         <div className="w-16 h-16 rounded-2xl bg-card-bg border border-white/10 hover:border-yellow-500/50 hover:bg-yellow-500/10 flex items-center justify-center text-white transition-all hover:scale-110">
@@ -153,7 +155,7 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                 <div className="glass-card p-6 flex flex-col items-center justify-center">
                     <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
                         <Clock size={24} />
