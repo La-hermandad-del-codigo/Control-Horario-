@@ -94,3 +94,6 @@ Una vez conectado el repositorio, Vercel desplegará automáticamente cada vez q
 - **Página en blanco después del deploy:** Confirma que el `vercel.json` esté en la raíz del proyecto y que el **Output Directory** sea `dist`
 - **Errores de Supabase:** Verifica que la URL y la clave anónima sean correctas y que las políticas de seguridad (RLS) en Supabase permitan el acceso desde el dominio de Vercel
 
+## ¿Qué aprendió el equipo?
+
+En este proyecto aprendimos a usar Antigravity y su IA para la creación de proyectos, a demás del uso de mcp para la conección con supabase.
