@@ -54,7 +54,7 @@ const [editForm, setEditForm] = useState({
 // Carga las sesiones al montar y cada vez que cambia refreshTrigger.
 // Carga las últimas 5 sesiones completadas.
 useEffect(() => {
-    loadSessions(5);
+    void loadSessions(5);
 }, [loadSessions, refreshTrigger]);
 /**
  * Elimina una sesión después de confirmación del usuario.
@@ -174,7 +174,8 @@ const handleDelete = async (id: string) => {
                                 >
                                     <Trash2 size={18} />
                                 </button>
- </div>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}
@@ -237,4 +238,4 @@ const handleDelete = async (id: string) => {
                 </form>
             </Modal>
         </div>
-    );
+    );}
