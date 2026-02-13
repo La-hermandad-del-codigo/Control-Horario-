@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 
 // Database: tipos generados de la base de datos.
 import type { Database } from '../types/database.types';
+import { formatTime } from '../utils/time';
 
 /**
  * Tipo extendido de sesión de trabajo.
@@ -30,7 +31,9 @@ type WorkSession = Database['public']['Tables']['work_sessions']['Row'] & {
  *
  * @returns {Object} Objeto con:
  * - `activeSession` {WorkSession | null} - Sesión activa actual.
+ * - `abandonedSession` {Object | null} - Sesión abandonada detectada, con id y timeMessage.
  * - `elapsedTime` {string} - Tiempo transcurrido formateado como "HH:MM:SS".
+ * - `elapsedSeconds` {number} - Tiempo transcurrido en segundos (sin formatear).
  * - `pauseCount` {number} - Número de pausas en la sesión activa.
  * - `isPaused` {boolean} - Si la sesión está pausada actualmente.
  * - `loading` {boolean} - Si se está cargando o procesando una operación.
@@ -38,6 +41,8 @@ type WorkSession = Database['public']['Tables']['work_sessions']['Row'] & {
  * - `pauseSession` {Function} - Pausa la sesión activa.
  * - `resumeSession` {Function} - Reanuda una sesión pausada.
  * - `endSession` {Function} - Finaliza la sesión y calcula la duración total.
+ * - `recoverSession` {Function} - Recupera una sesión abandonada.
+ * - `discardSession` {Function} - Descarta una sesión abandonada.
  */
 export function useSession() {
     // Sesión de trabajo activa actual (null si no hay ninguna).
@@ -55,18 +60,10 @@ export function useSession() {
     // Referencia al intervalo del timer. Se usa useRef para no perder la referencia
     // entre re-renders y poder limpiar el intervalo correctamente.
     const timerRef = useRef<number | null>(null);
+    const hasInitialized = useRef(false);
 
-    /**
-     * Formatea segundos a formato legible HH:MM:SS.
-     * @param {number} seconds - Segundos totales a formatear.
-     * @returns {string} Tiempo formateado, ej: "02:30:15".
-     */
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
+    // Sesión abandonada detectada: contiene su id y un mensaje de tiempo legible.
+    const [abandonedSession, setAbandonedSession] = useState<{ id: string; timeMessage: string } | null>(null);
 
     /**
      * Calcula el tiempo neto transcurrido de una sesión, descontando todas las pausas.
@@ -84,9 +81,9 @@ export function useSession() {
         const start = new Date(session.start_time).getTime();
         const now = Date.now();
 
-        let totalPauseMs = 0;       // Tiempo total pausado en milisegundos.
+        let totalPauseMs = 0;          // Tiempo total pausado en milisegundos.
         let isCurrentlyPaused = false; // Si hay una pausa abierta ahora.
-        let currentPauseStart = 0;    // Timestamp de inicio de la pausa actual.
+        let currentPauseStart = 0;     // Timestamp de inicio de la pausa actual.
 
         // Recorre todas las pausas de la sesión.
         session.work_pauses.forEach(pause => {
@@ -162,83 +159,131 @@ export function useSession() {
     }, [calculateElapsedTime]);
 
     /**
-     * Verifica si hay sesiones "abandonadas" (abiertas por demasiado tiempo)
-     * usando una función RPC de la base de datos.
+     * Verifica si hay sesiones "abandonadas" (abiertas por demasiado tiempo).
      *
-     * Si encuentra una sesión abandonada, muestra un diálogo de confirmación:
-     * - "Sí" → recupera la sesión (la marca como 'active').
-     * - "No" → marca la sesión como 'abandoned' con la hora actual como fin.
+     * Si encuentra una sesión abandonada, en lugar de usar `window.confirm`,
+     * guarda el estado en `abandonedSession` para que la UI lo maneje.
+     * El mensaje de tiempo se expresa en horas (si ≥ 1h) o en minutos.
      *
-     * Después de cualquier acción, recarga la sesión activa.
+     * Después de detectar la sesión, espera la acción del usuario
+     * a través de `recoverSession` o `discardSession`.
      */
     const checkAbandonedSessions = useCallback(async () => {
-        const { data, error } = await supabase.rpc('check_abandoned_sessions');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+            .from('work_sessions')
+            .select('id, start_time')
+            .eq('user_id', user.id)
+            .in('status', ['active', 'paused'])
+            .order('created_at', { ascending: false })
+            .maybeSingle();
+
         if (error) {
-            console.error('Error checking abandoned sessions:', error);
+            console.error('Error checking sessions:', error);
             return;
         }
 
-        if (data && data.length > 0) {
-            const session = data[0];
-            // Pregunta al usuario si quiere recuperar la sesión abandonada.
-            const shouldRecover = window.confirm(
-                `Tienes una sesión abierta desde hace ${Math.floor(session.hours_since_start)} horas. ¿Deseas recuperarla?`
-            );
+        if (data) {
+            const msSinceStart = Date.now() - new Date(data.start_time).getTime();
+            const hoursSinceStart = msSinceStart / (1000 * 3600);
 
-            if (shouldRecover) {
-                // Recupera la sesión: la vuelve a poner como 'active'.
-                await supabase
-                    .from('work_sessions')
-                    .update({ status: 'active' })
-                    .eq('id', session.session_id);
+            // Formatea el mensaje de tiempo: horas si ≥ 1h, minutos si no.
+            let timeMessage: string;
+            if (hoursSinceStart >= 1) {
+                timeMessage = `${Math.floor(hoursSinceStart)} horas`;
             } else {
-                // Descarta la sesión: la marca como 'abandoned' con hora de fin actual.
-                await supabase
-                    .from('work_sessions')
-                    .update({
-                        status: 'abandoned',
-                        end_time: new Date().toISOString()
-                    })
-                    .eq('id', session.session_id);
+                const minutes = Math.floor(msSinceStart / (1000 * 60));
+                timeMessage = `${minutes} minutos`;
             }
+
+            // En lugar de window.confirm, expone el estado para que la UI decida.
+            setAbandonedSession({
+                id: data.id,
+                timeMessage
+            });
+        } else {
+            // Si no hay sesión abandonada, continúa con el flujo normal.
             await loadActiveSession();
         }
     }, [loadActiveSession]);
 
+    /**
+     * Recupera una sesión abandonada marcándola de nuevo como 'active'.
+     * Luego recarga la sesión activa normalmente.
+     */
+    const recoverSession = async () => {
+        if (!abandonedSession) return;
+
+        await supabase
+            .from('work_sessions')
+            .update({ status: 'active' })
+            .eq('id', abandonedSession.id);
+
+        setAbandonedSession(null);
+        await loadActiveSession();
+    };
+
+    /**
+     * Descarta una sesión abandonada marcándola como 'abandoned'
+     * con la hora actual como tiempo de fin.
+     * Luego recarga la sesión activa normalmente.
+     */
+    const discardSession = async () => {
+        if (!abandonedSession) return;
+
+        await supabase
+            .from('work_sessions')
+            .update({
+                status: 'abandoned',
+                end_time: new Date().toISOString()
+            })
+            .eq('id', abandonedSession.id);
+
+        setAbandonedSession(null);
+        await loadActiveSession();
+    };
+
     // Efecto de inicialización: al montar el componente,
     // primero verifica sesiones abandonadas y luego carga la sesión activa.
     useEffect(() => {
-        checkAbandonedSessions().then(() => loadActiveSession());
-    }, [checkAbandonedSessions, loadActiveSession]);
+        if (hasInitialized.current) return;
+        hasInitialized.current = true;
+
+        checkAbandonedSessions();
+
+        return () => {
+            hasInitialized.current = false;
+        };
+    }, [checkAbandonedSessions]);
 
     /**
      * Efecto del cronómetro.
      *
      * Si hay una sesión activa y NO está pausada, crea un intervalo que
-     * incrementa `elapsedTime` cada segundo (1000ms).
+     * recalcula el tiempo neto cada segundo usando `calculateElapsedTime`.
      * Si la sesión se pausa o se elimina, limpia el intervalo.
      * El cleanup del efecto también limpia el intervalo al desmontar.
      */
     useEffect(() => {
-        if (activeSession && !isPaused) {
-            // Sesión activa y corriendo: inicia el cronómetro.
-            timerRef.current = window.setInterval(() => {
-                setElapsedTime(prev => prev + 1);
-            }, 1000);
-        } else {
-            // Sesión pausada o inexistente: detiene el cronómetro.
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        }
+        if (!activeSession || isPaused) return;
+
+        // Calcula el tiempo inicial al activar el efecto.
+        calculateElapsedTime(activeSession);
+
+        timerRef.current = window.setInterval(() => {
+            calculateElapsedTime(activeSession);
+        }, 1000);
 
         // Cleanup: limpia el intervalo al cambiar dependencias o desmontar.
         return () => {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
+                timerRef.current = null;
             }
         };
-    }, [activeSession, isPaused]);
+    }, [activeSession, isPaused, calculateElapsedTime]);
 
     /**
      * Inicia una nueva sesión de trabajo.
@@ -295,6 +340,13 @@ export function useSession() {
         if (!activeSession) return;
         if (isPaused || loading) return;
 
+        // Congela el tiempo calculado antes de pausar y detiene el cronómetro.
+        calculateElapsedTime(activeSession);
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+
         // Actualización optimista: marca como pausada inmediatamente en la UI.
         setIsPaused(true);
         setLoading(true);
@@ -330,7 +382,6 @@ export function useSession() {
         }
     };
 
-
     /**
      * Reanuda una sesión que está pausada.
      *
@@ -338,9 +389,9 @@ export function useSession() {
      * 1. Cierra la pausa activa: establece `pause_end` = ahora en la pausa abierta
      *    (la que tiene `pause_end` = null).
      * 2. Actualiza el estado de la sesión a 'active'.
+     * 3. Recarga la sesión para sincronizar el estado y reanudar el cronómetro.
      *
      * Si ocurre un error, hace rollback del estado de pausa en la UI.
-     * No recarga la sesión completa para mejor rendimiento.
      */
     const resumeSession = async () => {
         if (!activeSession || !isPaused || loading) return;
@@ -367,8 +418,9 @@ export function useSession() {
 
             if (sessionError) throw sessionError;
 
-            // Nota: No se recarga la sesión completa para mejor rendimiento.
+            // 3. Recargar la sesión para sincronizar con la base de datos.
             // El cronómetro se reanuda automáticamente por el efecto del timer.
+            await loadActiveSession();
         } catch (error) {
             console.error(error);
 
@@ -379,22 +431,28 @@ export function useSession() {
         }
     };
 
-
     /**
      * Finaliza la sesión activa y calcula la duración total neta de trabajo.
      *
      * Flujo:
-     * 1. Obtiene todas las pausas de la sesión desde la base de datos.
-     * 2. Calcula el tiempo total pausado (sumando cada pausa).
+     * 1. Detiene el cronómetro inmediatamente.
+     * 2. Obtiene todas las pausas de la sesión desde la base de datos.
+     * 3. Calcula el tiempo total pausado (sumando cada pausa).
      *    Si una pausa no tiene fin, usa Date.now() como fin.
-     * 3. Calcula el tiempo neto = (fin - inicio) - pausas totales.
-     * 4. Actualiza la sesión con end_time, status='completed' y total_duration formateada.
-     * 5. Reinicia todos los estados locales.
+     * 4. Calcula el tiempo neto = (fin - inicio) - pausas totales.
+     * 5. Actualiza la sesión con end_time, status='completed' y total_duration formateada.
+     * 6. Reinicia todos los estados locales.
      *
      * @throws {Error} Si no hay sesión activa.
      */
     const endSession = async () => {
         if (!activeSession) throw new Error("No active session");
+
+        // Detiene el cronómetro antes de calcular el tiempo final.
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
 
         // Obtiene todas las pausas de la sesión para cálculo preciso.
         const { data: pauses } = await supabase
@@ -416,7 +474,7 @@ export function useSession() {
         // Calcula la duración neta de trabajo.
         const start = new Date(activeSession.start_time).getTime();
         const end = Date.now();
-        const netWorkSeconds = Math.floor(((end - start) - totalPauseTimeMs) / 1000);
+        const netWorkSeconds = Math.max(0, Math.floor(((end - start) - totalPauseTimeMs) / 1000));
         const formattedDuration = formatTime(netWorkSeconds);
 
         // Actualiza la sesión en la base de datos marcándola como completada.
@@ -439,13 +497,17 @@ export function useSession() {
 
     return {
         activeSession,
-        elapsedTime: formatTime(elapsedTime),  // Devuelve el tiempo ya formateado.
-        pauseCount: activeSession?.work_pauses?.length ?? 0,  // Número de pausas en la sesión.
+        abandonedSession,
+        elapsedSeconds: elapsedTime,        // Tiempo en segundos sin formatear.
+        elapsedTime: formatTime(elapsedTime), // Tiempo ya formateado como "HH:MM:SS".
+        pauseCount: activeSession?.work_pauses?.length ?? 0, // Número de pausas en la sesión.
         isPaused,
         loading,
         startSession,
         pauseSession,
         resumeSession,
-        endSession
+        endSession,
+        recoverSession,
+        discardSession
     };
 }

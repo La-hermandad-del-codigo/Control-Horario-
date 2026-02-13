@@ -14,8 +14,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-
-// useAuth: hook que provee el estado de autenticación del usuario.
+import Sessions from './pages/Sessions';
 import { useAuth } from './hooks/useAuth';
 
 /**
@@ -49,7 +48,11 @@ function AppRoutes() {
             <Dashboard />
           </Layout>
         } />
-        {/* Alias: /dashboard redirige a / para mantener una sola URL canónica */}
+        <Route path="/sessions" element={
+          <Layout>
+            <Sessions />
+          </Layout>
+        } />
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
       </Route>
 

@@ -10,7 +10,8 @@ import { Link, useNavigate } from 'react-router-dom';
 // Íconos de lucide-react:
 // Loader2: spinner. Mail: email. Lock: candado. User: persona.
 // AlertCircle: alerta. Eye/EyeOff: mostrar/ocultar contraseña.
-import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
+// Check: requisito cumplido. X: requisito no cumplido.
+import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, Check, X } from 'lucide-react';
 
 /**
  * Página de registro de nuevo usuario.
@@ -18,8 +19,9 @@ import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-reac
  * Presenta un formulario completo con:
  * - Campos: nombre completo, email, contraseña y confirmación de contraseña.
  * - Indicador visual de fuerza de contraseña (barra de progreso dinámica).
- * - Validaciones: contraseña mínima 6 caracteres, al menos una mayúscula,
+ * - Validaciones: contraseña entre 8 y 12 caracteres, al menos una mayúscula,
  *   y coincidencia con confirmación.
+ * - Checklist de requisitos de contraseña en tiempo real.
  * - Toggle de visibilidad para ambos campos de contraseña.
  * - Manejo de errores con mensajes en español.
  * - Efectos decorativos glass-card con orbes de luz difusa.
@@ -51,7 +53,7 @@ export default function Register() {
      * Calcula la fuerza de la contraseña basándose en 4 criterios.
      *
      * Criterios evaluados (1 punto cada uno):
-     * 1. Longitud mínima de 6 caracteres.
+     * 1. Longitud entre 8 y 12 caracteres.
      * 2. Al menos una letra mayúscula.
      * 3. Al menos un dígito numérico.
      * 4. Al menos un carácter especial (no alfanumérico).
@@ -66,10 +68,10 @@ export default function Register() {
     const passwordStrength = useMemo(() => {
         if (!password) return { level: 0, label: '', color: '' };
         let score = 0;
-        if (password.length >= 6) score++;       // Criterio 1: Longitud mínima.
-        if (/[A-Z]/.test(password)) score++;     // Criterio 2: Mayúscula.
-        if (/[0-9]/.test(password)) score++;     // Criterio 3: Número.
-        if (/[^A-Za-z0-9]/.test(password)) score++; // Criterio 4: Carácter especial.
+        if (password.length >= 8 && password.length <= 12) score++; // Criterio 1: Longitud entre 8 y 12.
+        if (/[A-Z]/.test(password)) score++;                         // Criterio 2: Mayúscula.
+        if (/[0-9]/.test(password)) score++;                         // Criterio 3: Número.
+        if (/[^A-Za-z0-9]/.test(password)) score++;                  // Criterio 4: Carácter especial.
 
         // Mapeo de puntuación a etiqueta y color visual.
         const levels: Record<number, { label: string; color: string }> = {
@@ -85,11 +87,39 @@ export default function Register() {
     }, [password]);
 
     /**
+     * Lista de requisitos de contraseña evaluados en tiempo real.
+     * Cada ítem indica si el criterio fue cumplido (`met`) para mostrarlo
+     * en el checklist visual dentro del formulario.
+     *
+     * Se recalcula solo cuando cambia `password` gracias a `useMemo`.
+     */
+    const passwordRequirements = useMemo(() => {
+        return [
+            {
+                label: 'Entre 8 y 12 caracteres',
+                met: password.length >= 8 && password.length <= 12,
+            },
+            {
+                label: 'Al menos una letra mayúscula',
+                met: /[A-Z]/.test(password),
+            },
+            {
+                label: 'Al menos un número',
+                met: /[0-9]/.test(password),
+            },
+            {
+                label: 'Al menos un carácter especial (!@#$...)',
+                met: /[^A-Za-z0-9]/.test(password),
+            },
+        ];
+    }, [password]);
+
+    /**
      * Maneja el envío del formulario de registro.
      *
      * Validaciones previas al envío:
      * 1. Las contraseñas deben coincidir.
-     * 2. Longitud mínima de 6 caracteres.
+     * 2. Longitud entre 8 y 12 caracteres.
      * 3. Al menos una letra mayúscula.
      *
      * Si pasa las validaciones, llama a signUp y redirige al dashboard.
@@ -107,9 +137,9 @@ export default function Register() {
             return;
         }
 
-        // Validación: longitud mínima.
-        if (password.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres');
+        // Validación: longitud entre 8 y 12 caracteres.
+        if (password.length < 8 || password.length > 12) {
+            setError('La contraseña debe tener entre 8 y 12 caracteres');
             return;
         }
 
@@ -220,7 +250,7 @@ export default function Register() {
 
                             {/* Indicador visual de fuerza de contraseña */}
                             {password && (
-                                <div className="mt-2 space-y-1">
+                                <div className="mt-2 space-y-2">
                                     {/* Barra de 4 segmentos que se colorean según la fuerza */}
                                     <div className="flex gap-1">
                                         {[1, 2, 3, 4].map((i) => (
@@ -240,6 +270,33 @@ export default function Register() {
                                         }`}>
                                         {passwordStrength.label}
                                     </p>
+
+                                    {/* Checklist de requisitos de contraseña en tiempo real */}
+                                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-1.5">
+                                        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Requisitos de contraseña</p>
+                                        {passwordRequirements.map((req, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`flex items-center gap-2 transition-all duration-300 ${req.met ? 'opacity-100' : 'opacity-70'
+                                                    }`}
+                                            >
+                                                {/* Ícono Check (verde) si cumple, X (rojo) si no */}
+                                                <div className={`flex items-center justify-center w-4 h-4 rounded-full transition-all duration-300 ${req.met
+                                                    ? 'bg-green-500/20 text-green-400'
+                                                    : 'bg-red-500/20 text-red-400'
+                                                    }`}>
+                                                    {req.met
+                                                        ? <Check size={10} strokeWidth={3} />
+                                                        : <X size={10} strokeWidth={3} />
+                                                    }
+                                                </div>
+                                                <span className={`text-xs transition-colors duration-300 ${req.met ? 'text-green-400' : 'text-gray-500'
+                                                    }`}>
+                                                    {req.label}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -258,6 +315,7 @@ export default function Register() {
                                     className="w-full bg-dark-bg/50 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-white placeholder-gray-600 focus:outline-none focus:border-primary-lime/50 focus:ring-1 focus:ring-primary-lime/50 transition-all"
                                     placeholder="••••••••"
                                 />
+                                {/* Botón para mostrar/ocultar confirmación de contraseña */}
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}

@@ -4,11 +4,7 @@ import { useEffect, useState } from 'react';
 
 // useHistory: hook personalizado para gestionar el historial de sesiones.
 import { useHistory } from '../../hooks/useHistory';
-
-// Trash2: ícono de papelera (eliminar). Edit2: ícono de lápiz (editar).
-import { Trash2, Edit2 } from 'lucide-react';
-
-// Modal: componente reutilizable de diálogo modal.
+import { Trash2, Edit2, Coffee } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 
 // Database: tipos generados de la base de datos para tipado seguro.
@@ -26,7 +22,7 @@ type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
  *   de las sesiones. Se incrementa desde el Dashboard al completar una sesión.
  */
 interface HistoryListProps {
-    refreshTrigger?: number;
+  refreshTrigger?: number;
 }
 
 /**
@@ -45,62 +41,32 @@ interface HistoryListProps {
  * - Con sesiones: grid de tarjetas con información de cada sesión.
  */
 export const HistoryList = ({ refreshTrigger = 0 }: HistoryListProps) => {
-    // Desestructura las funciones y estado del hook de historial.
-    const { sessions, loading, loadSessions, deleteSession, updateSession } = useHistory();
-
-    // Sesión que se está editando actualmente (null = no hay edición activa).
-    const [editingSession, setEditingSession] = useState<WorkSession | null>(null);
-
-    // Estado del formulario de edición con los campos editables.
-    const [editForm, setEditForm] = useState({
-        start_time: '',
-        end_time: '',
-        notes: ''
-    });
-
-    // Carga las sesiones al montar y cada vez que cambia refreshTrigger.
-    // Carga las últimas 5 sesiones completadas.
-    useEffect(() => {
-        loadSessions(5);
-    }, [loadSessions, refreshTrigger]);
-
-    /**
-     * Elimina una sesión después de confirmación del usuario.
-     * Usa `window.confirm` como diálogo de confirmación simple.
-     * @param {string} id - ID de la sesión a eliminar.
-     */
-    const handleDelete = async (id: string) => {
-        if (window.confirm('¿Estás seguro de eliminar esta sesión?')) {
-            await deleteSession(id);
-        }
-    };
-
-    /**
-     * Abre el modal de edición y rellena el formulario con los datos de la sesión.
-     *
-     * Convierte las fechas ISO (UTC) al formato `datetime-local` (zona horaria local)
-     * para que el input HTML las muestre correctamente.
-     *
-     * @param {any} session - Sesión a editar.
-     */
-    const openEdit = (session: any) => {
-        setEditingSession(session);
-
-        // Función auxiliar para convertir ISO UTC a formato datetime-local (YYYY-MM-DDThh:mm).
-        // Resta el offset de zona horaria para mostrar la hora local correcta.
-        const toLocalISO = (isoString: string) => {
-            const date = new Date(isoString);
-            return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-        };
-
-        setEditForm({
-            start_time: toLocalISO(session.start_time),
-            end_time: session.end_time ? toLocalISO(session.end_time) : '',
-            notes: session.notes || ''
-        });
-    };
-
-    /**
+// Desestructura las funciones y estado del hook de historial.
+const { sessions, loading, loadSessions, deleteSession, updateSession } = useHistory();
+// Sesión que se está editando actualmente (null = no hay edición activa).
+const [editingSession, setEditingSession] = useState<WorkSession | null>(null);
+// Estado del formulario de edición con los campos editables.
+const [editForm, setEditForm] = useState({
+    start_time: '',
+    end_time: '',
+    notes: ''
+});
+// Carga las sesiones al montar y cada vez que cambia refreshTrigger.
+// Carga las últimas 5 sesiones completadas.
+useEffect(() => {
+    loadSessions(5);
+}, [loadSessions, refreshTrigger]);
+/**
+ * Elimina una sesión después de confirmación del usuario.
+ * Usa `window.confirm` como diálogo de confirmación simple.
+ * @param {string} id - ID de la sesión a eliminar.
+ */
+const handleDelete = async (id: string) => {
+    if (window.confirm('¿Estás seguro de eliminar esta sesión?')) {
+        await deleteSession(id);
+    }
+};
+/**
      * Guarda los cambios de edición de una sesión.
      *
      * Convierte las fechas del formulario (hora local) de vuelta a ISO UTC
@@ -108,6 +74,21 @@ export const HistoryList = ({ refreshTrigger = 0 }: HistoryListProps) => {
      *
      * @param {React.FormEvent} e - Evento del formulario.
      */
+    const openEdit = (session: any) => {
+        setEditingSession(session);
+        // Función auxiliar para convertir ISO UTC a formato datetime-local (YYYY-MM-DDThh:mm).
+        // Resta el offset de zona horaria para mostrar la hora local correcta.
+        const toLocalISO = (isoString: string) => {
+            const date = new Date(isoString);
+            return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        };
+        setEditForm({
+            start_time: toLocalISO(session.start_time),
+            end_time: session.end_time ? toLocalISO(session.end_time) : '',
+            notes: session.notes || ''
+        });
+    };
+
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingSession) return;
@@ -164,12 +145,11 @@ export const HistoryList = ({ refreshTrigger = 0 }: HistoryListProps) => {
                                         {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
                                         {session.end_time ? new Date(session.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Active'}
                                     </span>
-                                    {/* Muestra conteo de pausas solo si hay al menos 1 */}
-                                    {session.work_pauses && session.work_pauses[0]?.count > 0 && (
-                                        <span className="text-yellow-500/80">
-                                            {session.work_pauses[0].count} pausa(s)
-                                        </span>
-                                    )}
+                                    {/* Muestra conteo de pausas con ícono Coffee, siempre visible */}
+                                    <span className="flex items-center gap-1 text-yellow-500/80">
+                                        <Coffee size={14} />
+                                        {session.work_pauses?.[0]?.count || 0} pausa(s)
+                                    </span>
                                 </div>
                                 {/* Notas de la sesión (si existen) */}
                                 {session.notes && (
@@ -194,8 +174,7 @@ export const HistoryList = ({ refreshTrigger = 0 }: HistoryListProps) => {
                                 >
                                     <Trash2 size={18} />
                                 </button>
-                            </div>
-                        </div>
+ </div>
                     ))}
                 </div>
             )}
@@ -259,4 +238,3 @@ export const HistoryList = ({ refreshTrigger = 0 }: HistoryListProps) => {
             </Modal>
         </div>
     );
-};

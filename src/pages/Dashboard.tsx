@@ -1,5 +1,6 @@
 // useState: maneja estados locales del dashboard (modal de confirmación, trigger de refresco).
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // useAuth: hook de autenticación para obtener datos del usuario.
 import { useAuth } from '../hooks/useAuth';
@@ -9,14 +10,16 @@ import { useSession } from '../hooks/useSession';
 
 // Íconos de lucide-react:
 // Play: iniciar/reanudar. Pause: pausar. Square: detener/finalizar.
-// Clock: reloj. Coffee: café/pausas.
-import { Play, Pause, Square, Clock, Coffee } from 'lucide-react';
+// Clock: reloj. Coffee: café/pausas. ClipboardList: sesiones. AlertTriangle: advertencia.
+import { Play, Pause, Square, Clock, Coffee, ClipboardList, AlertTriangle } from 'lucide-react';
 
 // HistoryList: componente que muestra el historial de sesiones completadas.
 import { HistoryList } from '../components/history/HistoryList';
 
 // Modal: componente reutilizable de diálogo.
 import { Modal } from '../components/ui/Modal';
+import { formatTime } from '../utils/time';
+import { useWeeklyStats } from '../hooks/useWeeklyStats';
 
 /**
  * Página principal del Dashboard (panel de control).
@@ -32,28 +35,43 @@ import { Modal } from '../components/ui/Modal';
  *    - Botones de control (Iniciar / Pausar-Reanudar / Finalizar).
  *    - Efecto visual de fondo animado cuando la sesión está activa.
  *
- * 3. **Estadísticas rápidas**: Tarjetas con horas del día y conteo de pausas.
+ * 3. **Estadísticas rápidas**: Tarjetas con horas semanales, conteo de pausas
+ *    y acceso directo a todas las sesiones.
  *
  * 4. **Historial**: Lista de las últimas sesiones completadas (componente HistoryList).
  *
  * 5. **Modal de confirmación**: Diálogo para confirmar la finalización de la jornada.
+ *
+ * 6. **Modal de sesión abandonada**: Diálogo para recuperar o descartar
+ *    una sesión que quedó abierta en una visita anterior.
  */
 export default function Dashboard() {
+    const navigate = useNavigate();
+
     // Datos del usuario autenticado.
     const { user } = useAuth();
 
     // Desestructura todas las propiedades del hook de sesión.
     const {
         activeSession,    // Sesión activa actual (o null).
+        abandonedSession, // Sesión abandonada detectada (con id y timeMessage), o null.
         elapsedTime,      // Tiempo transcurrido formateado "HH:MM:SS".
+        elapsedSeconds,   // Tiempo transcurrido en segundos (sin formatear).
         isPaused,         // Si la sesión está pausada.
         loading,          // Si se está procesando una operación.
         pauseCount,       // Número de pausas en la sesión actual.
         startSession,     // Función para iniciar sesión de trabajo.
         pauseSession,     // Función para pausar la sesión.
         resumeSession,    // Función para reanudar la sesión.
-        endSession        // Función para finalizar la sesión.
+        endSession,       // Función para finalizar la sesión.
+        recoverSession,   // Función para recuperar una sesión abandonada.
+        discardSession    // Función para descartar una sesión abandonada.
     } = useSession();
+
+    const { totalWeeklySeconds } = useWeeklyStats({
+        elapsedSeconds,
+        hasActiveSession: !!activeSession
+    });
 
     // Controla la visibilidad del modal de confirmación de fin de jornada.
     const [isEndModalOpen, setIsEndModalOpen] = useState(false);
@@ -153,9 +171,9 @@ export default function Dashboard() {
 
                     {/* Badge de estado: cambia color y texto según el estado de la sesión */}
                     <div className={`mb-8 px-4 py-1.5 rounded-full text-sm font-semibold border ${!activeSession
-                        ? 'bg-gray-800/50 text-gray-400 border-gray-700'          // Sin sesión
+                        ? 'bg-gray-800/50 text-gray-400 border-gray-700'           // Sin sesión
                         : isPaused
-                            ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' // Pausada
+                            ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'  // Pausada
                             : 'bg-primary-lime/10 text-primary-lime border-primary-lime/20 animate-pulse' // Activa
                         }`}>
                         {!activeSession ? 'Sin sesión activa' : isPaused ? 'Sesión Pausada' : 'Sesión en curso'}
@@ -221,14 +239,14 @@ export default function Dashboard() {
             </div>
 
             {/* === Tarjetas de estadísticas rápidas === */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                {/* Tarjeta: Horas de hoy (placeholder -- por implementar) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Tarjeta: Horas semanales acumuladas */}
                 <div className="glass-card p-6 flex flex-col items-center justify-center">
                     <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
                         <Clock size={24} />
                     </div>
-                    <p className="text-gray-400 text-sm mb-1">Horas Hoy</p>
-                    <h3 className="text-2xl font-bold text-white">--:--</h3>
+                    <p className="text-gray-400 text-sm mb-1">Horas Semanales</p>
+                    <h3 className="text-2xl font-bold text-white">{formatTime(totalWeeklySeconds)}</h3>
                 </div>
 
                 {/* Tarjeta: Número de pausas de la sesión activa */}
@@ -239,6 +257,18 @@ export default function Dashboard() {
                     <p className="text-gray-400 text-sm mb-1">Pausas Hoy</p>
                     <h3 className="text-2xl font-bold text-white">{pauseCount ?? '--'}</h3>
                 </div>
+
+                {/* Tarjeta: Acceso directo a todas las sesiones */}
+                <button
+                    onClick={() => navigate('/sessions')}
+                    className="glass-card p-6 flex flex-col items-center justify-center hover:border-primary-lime/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                >
+                    <div className="w-12 h-12 rounded-full bg-primary-lime/10 flex items-center justify-center text-primary-lime mb-3 group-hover:bg-primary-lime/20 transition-colors">
+                        <ClipboardList size={24} />
+                    </div>
+                    <p className="text-gray-400 text-sm mb-1 group-hover:text-gray-300 transition-colors">Ver todas</p>
+                    <h3 className="text-2xl font-bold text-white">Sesiones</h3>
+                </button>
             </div>
 
             {/* === Historial de sesiones completadas === */}
@@ -272,6 +302,45 @@ export default function Dashboard() {
                             className="px-6 py-2 bg-red-500/10 border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg font-medium transition-all"
                         >
                             Finalizar
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* === Modal de sesión abandonada: recuperar o descartar === */}
+            <Modal
+                isOpen={!!abandonedSession}
+                onClose={() => { }} // Se bloquea el cierre por clic externo hasta que el usuario decida.
+                title="Sesión Abierta Detectada"
+            >
+                <div className="flex flex-col items-center text-center space-y-6 py-4">
+                    <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-2">
+                        <AlertTriangle size={32} className="text-yellow-500" />
+                    </div>
+
+                    <div className="space-y-2">
+                        <h4 className="text-lg font-semibold text-white">¿Deseas recuperar tu sesión anterior?</h4>
+                        <p className="text-gray-400 max-w-sm mx-auto">
+                            Tienes una sesión que quedó abierta hace{' '}
+                            <span className="text-primary-lime font-mono font-bold">{abandonedSession?.timeMessage}</span>.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-4">
+                        {/* Botón descartar: ignora la sesión y permite iniciar una nueva */}
+                        <button
+                            onClick={discardSession}
+                            className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+                        >
+                            Ignorar y comenzar nueva
+                        </button>
+                        {/* Botón recuperar: reanuda la sesión abandonada */}
+                        <button
+                            onClick={recoverSession}
+                            className="px-6 py-3 bg-primary-lime hover:bg-secondary-lime text-dark-bg rounded-xl font-bold transition-all shadow-lg shadow-primary-lime/20 flex items-center justify-center gap-2"
+                        >
+                            <Play size={18} fill="currentColor" />
+                            Recuperar Sesión
                         </button>
                     </div>
                 </div>

@@ -16,6 +16,7 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    size?: 'default' | 'large';
 }
 
 /**
@@ -32,8 +33,8 @@ interface ModalProps {
  * @param {ModalProps} props - Props del componente.
  * @returns {JSX.Element | null} El modal renderizado, o null si no está abierto.
  */
-export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
-    // Efecto para controlar el scroll del body.
+export const Modal = ({ isOpen, onClose, title, children, size = 'default' }: ModalProps) => {
+  // Efecto para controlar el scroll del body.
     // Cuando el modal se abre, bloquea el scroll. Cuando se cierra o el componente
     // se desmonta, restaura el scroll normal.
     useEffect(() => {
@@ -51,12 +52,12 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
     // Si el modal no está abierto, no renderiza nada.
     if (!isOpen) return null;
 
+    const maxWidthClass = size === 'large' ? 'max-w-6xl' : 'max-w-lg';
+
     return (
         // Overlay: cubre toda la pantalla con fondo negro semitransparente y desenfoque.
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            {/* Contenedor del modal con efecto glass-card */}
-            <div className="glass-card w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-                {/* Cabecera: título y botón de cierre */}
+            <div className={`glass-card w-full ${maxWidthClass} overflow-hidden flex flex-col max-h-[90vh]`}>
                 <div className="flex items-center justify-between p-6 border-b border-white/10">
                     <h3 className="text-xl font-bold text-white">{title}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
