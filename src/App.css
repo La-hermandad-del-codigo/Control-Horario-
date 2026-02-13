@@ -1,3 +1,9 @@
+/**
+ * App.css - Estilos residuales del template inicial de Vite + React.
+ * La mayoría NO se usan activamente (el diseño usa Tailwind CSS).
+ */
+
+/* Contenedor raíz: centra el contenido y limita el ancho. */
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -5,6 +11,7 @@
   text-align: center;
 }
 
+/* Logo del template original (no usado). */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -18,13 +25,10 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* Animación de rotación del logo. */
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -33,10 +37,5 @@
   }
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+.card { padding: 2em; }
+.read-the-docs { color: #888; }

@@ -1,21 +1,63 @@
+/**
+ * index.css - Estilos globales de la aplicación.
+ *
+ * Este archivo configura:
+ * 1. La fuente "Inter" de Google Fonts como tipografía principal.
+ * 2. Las directivas de Tailwind CSS (base, components, utilities).
+ * 3. Estilos base del body (fondo oscuro, texto claro, antialiased).
+ * 4. Utilidades personalizadas reutilizables (glass-panel, glass-card).
+ */
+
+/* Importa la fuente Inter con pesos: 300 (light), 400 (regular), 500 (medium), 600 (semibold), 700 (bold). */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Directivas de Tailwind CSS: inyectan los estilos base, de componentes y utilidades. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Capa base: estilos que se aplican a elementos HTML nativos. */
 @layer base {
   body {
+    /* Fondo oscuro, texto claro, fuente sans-serif (Inter), y renderizado suavizado. */
     @apply bg-dark-bg text-gray-100 font-sans antialiased;
   }
 }
 
+/* Capa de utilidades: clases CSS reutilizables con efecto glassmorphism. */
 @layer utilities {
+
+  /**
+   * .glass-panel: Panel con efecto vidrio esmerilado.
+   * Usado en la Navbar. Combina fondo semitransparente con backdrop-blur
+   * y un borde sutil blanco para simular un panel de vidrio.
+   */
   .glass-panel {
     @apply bg-card-bg/60 backdrop-blur-md border border-white/5;
   }
-  
+
+  /**
+   * .glass-card: Tarjeta con efecto vidrio.
+   * Usado en cards del Dashboard, formularios de Login/Register y modales.
+   * Similar a glass-panel pero con menos opacidad y bordes redondeados.
+   */
   .glass-card {
     @apply bg-card-bg/40 backdrop-blur-sm border border-white/5 rounded-2xl;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
   }
 }
