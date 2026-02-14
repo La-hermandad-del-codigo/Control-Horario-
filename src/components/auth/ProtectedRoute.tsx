@@ -3,7 +3,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 
 // useAuth: hook personalizado que provee el estado de autenticación (usuario actual y estado de carga).
-import { useAuth } from '../../hooks/useAuth';
+imprt { useAuth } from '../../hooks/useAuth';
 
 // Loader2: ícono de carga (spinner) de la librería lucide-react.
 import { Loader2 } from 'lucide-react';
