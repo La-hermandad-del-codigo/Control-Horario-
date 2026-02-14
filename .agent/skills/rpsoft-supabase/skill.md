@@ -113,3 +113,13 @@ CREATE TRIGGER tr_items_update_timestamp
 - **No romper compatibilidad**: Evitar renombrar columnas usadas; preferir agregar nuevas y deprecar las viejas.
 - **No afectar seguridad**: Nunca deshabilitar RLS temporalmente en producción.
 - **Validación Manual**: Siempre revisar el plan de ejecución (`EXPLAIN ANALYZE`) de queries complejas nuevas.
+
+## 🔧 Skill Activation Protocol
+
+Cuando esta skill sea activada, el agente DEBE incluir al inicio de la respuesta el siguiente bloque:
+
+---
+    Active Skill: rpsoft-supabase
+---
+
+Este bloque no puede omitirse.
