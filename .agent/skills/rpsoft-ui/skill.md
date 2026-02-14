@@ -164,3 +164,12 @@ Antes de considerar cualquier feature o componente como **terminado**, debe cump
 - [ ] **Stack obligatorio**: todo componente usa React + TypeScript + TailwindCSS. No se permite CSS-in-JS, SCSS ni CSS plano adicional sin justificación.
 - [ ] **Naming conventions**: archivos, componentes, funciones y tipos siguen las convenciones definidas.
 - [ ] **Accesibilidad (a11y)**: cumple los 5 requisitos mínimos documentados arriba.
+
+🔧 Skill Activation Protocol
+Cuando esta skill sea activada, el agente DEBE incluir al inicio de la respuesta el siguiente bloque:
+
+---
+    Active Skill: rpsoft-ui
+---
+
+Este bloque no puede omitirse.
