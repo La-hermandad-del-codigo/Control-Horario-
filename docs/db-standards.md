@@ -78,4 +78,3 @@ for each row execute function update_updated_at_column();
 - Guía de PostgreSQL: [PostgreSQL Tutorial](https://www.postgresqltutorial.com/)
 
 ---
-*Mantén este documento actualizado si encuentras nuevos patrones o mejoras.*
