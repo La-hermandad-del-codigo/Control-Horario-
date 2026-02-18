@@ -16,6 +16,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Sessions from './pages/Sessions';
 import { useAuth } from './hooks/useAuth';
+import { AuthProvider } from './components/auth/AuthProvider';
+import { ToastProvider } from './context/ToastContext';
 
 /**
  * Componente que define la estructura de rutas de la aplicación.
@@ -71,7 +73,11 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <ToastProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

@@ -7,10 +7,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        'dark-bg': '#0A0A0A',
-        'card-bg': '#171717',
-        'primary-lime': '#D9F99D',
-        'secondary-lime': '#BEF264',
+        // RPSoft UI Standard Palette is used directly (blue-600, gray-50, etc.)
+        // We can define semantic aliases if needed, but for now we follow the skill classes.
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

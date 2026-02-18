@@ -142,8 +142,8 @@ export function useSession() {
             }
 
             if (data) {
-                // @ts-ignore - Inferencia de tipos con joins de Supabase.
-                const sessionWithPauses = data as WorkSession;
+                // Casting to WorkSession because Supabase joins are not automatically inferred fully deep
+                const sessionWithPauses = data as unknown as WorkSession;
                 setActiveSession(sessionWithPauses);
                 setIsPaused(data.status === 'paused');
                 calculateElapsedTime(sessionWithPauses);
@@ -318,8 +318,8 @@ export function useSession() {
 
         if (error) throw error;
 
-        // @ts-ignore
-        setActiveSession(data as WorkSession);
+        // Casting to WorkSession because Supabase joins are not automatically inferred fully deep
+        setActiveSession(data as unknown as WorkSession);
         setIsPaused(false);
         setElapsedTime(0);
     };

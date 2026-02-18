@@ -5,6 +5,9 @@ import { useState, useCallback } from 'react';
 // supabase: instancia del cliente de Supabase.
 import { supabase } from '../lib/supabase';
 
+// useToast: para notificaciones de éxito/error.
+import { useToast } from '../context/ToastContext';
+
 // Database: tipos generados de la base de datos para tipado seguro.
 import type { Database } from '../types/database.types';
 
@@ -43,6 +46,8 @@ export function useHistory() {
     // Mensaje de error en caso de fallo en alguna operación.
     const [error, setError] = useState<string | null>(null);
 
+    const { showToast } = useToast();
+
     /**
      * Carga las sesiones de trabajo completadas del usuario actual.
      *
@@ -66,7 +71,7 @@ export function useHistory() {
             // - Filtra por user_id del usuario actual y estado 'completed'.
             // - Ordena por start_time descendente (más recientes primero).
             // - Limita la cantidad de resultados.
-            let query = supabase
+            const query = supabase
                 .from('work_sessions')
                 .select('*, work_pauses(count)')
                 .eq('user_id', user.id)
@@ -78,12 +83,13 @@ export function useHistory() {
 
             if (error) throw error;
 
-            // @ts-ignore - La inferencia de tipos de Supabase con joins puede ser imprecisa.
-            setSessions(data as any);
+            // Casting to WorkSession[] to match state type
+            setSessions(data as unknown as WorkSession[]);
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error loading history:', err);
-            setError(err.message);
+            const message = err instanceof Error ? err.message : 'Error desconocido';
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -110,10 +116,13 @@ export function useHistory() {
 
             // Recarga las sesiones para actualizar la UI con los cambios.
             await loadSessions();
+            showToast('Sesión actualizada correctamente', 'success');
             return true;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error updating session:', err);
-            setError(err.message);
+            const message = err instanceof Error ? err.message : 'Error desconocido';
+            setError(message);
+            showToast(message || 'Error al actualizar la sesión', 'error');
             return false;
         }
     };
@@ -138,10 +147,13 @@ export function useHistory() {
 
             // Actualiza el estado local removiendo la sesión eliminada (optimistic update).
             setSessions(prev => prev.filter(s => s.id !== sessionId));
+            showToast('Sesión eliminada correctamente', 'success');
             return true;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error deleting session:', err);
-            setError(err.message);
+            const message = err instanceof Error ? err.message : 'Error desconocido';
+            setError(message);
+            showToast(message || 'Error al eliminar la sesión', 'error');
             return false;
         }
     };
