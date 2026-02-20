@@ -146,22 +146,22 @@ export default function Dashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     {/* Saludo con nombre del usuario (prioriza full_name, luego parte del email) */}
-                    <h1 className="text-3xl font-bold text-white mb-1">
-                        Hola, <span className="text-primary-lime">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</span>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                        Hola, <span className="text-green-700 dark:text-primary-lime">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</span>
                     </h1>
-                    <p className="text-gray-400">Panel de control de jornada laboral</p>
+                    <p className="text-gray-600 dark:text-gray-400">Panel de control de jornada laboral</p>
                 </div>
                 {/* Fecha actual formateada */}
-                <div className="bg-card-bg/50 px-4 py-2 rounded-lg border border-white/5 flex items-center gap-2">
+                <div className="bg-white/50 dark:bg-card-bg/50 px-4 py-2 rounded-lg border border-gray-200 dark:border-white/5 flex items-center gap-2">
                     <Clock size={18} className="text-primary-lime" />
-                    <span className="text-gray-300 font-mono">
+                    <span className="text-gray-700 dark:text-gray-300 font-mono">
                         {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
                     </span>
                 </div>
             </div>
 
             {/* === Tarjeta principal del cronómetro === */}
-            <div className={`glass-card p-8 md:p-12 transition-all duration-300 relative overflow-hidden ${activeSession ? 'border-primary-lime/20' : ''}`}>
+            <div className={`glass-card p-8 md:p-12 transition-all duration-300 relative ${activeSession ? 'border-primary-lime/20' : ''}`}>
                 {/* Efecto de fondo dinámico: orbe pulsante solo cuando la sesión está activa */}
                 {activeSession && !isPaused && (
                     <div className="absolute top-0 right-0 w-96 h-96 bg-primary-lime/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 animate-pulse"></div>
@@ -180,7 +180,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Display del cronómetro: muestra el tiempo en formato grande */}
-                    <div className="font-mono text-7xl md:text-9xl font-bold tracking-tighter text-white mb-10 tabular-nums">
+                    <div className="font-mono text-7xl md:text-9xl font-bold tracking-tighter text-gray-900 dark:text-white mb-10 tabular-nums">
                         {elapsedTime}
                     </div>
 
@@ -206,7 +206,7 @@ export default function Dashboard() {
                                         <div className="w-16 h-16 rounded-2xl bg-primary-lime hover:bg-secondary-lime flex items-center justify-center text-dark-bg transition-all hover:scale-110 shadow-lg">
                                             <Play size={32} fill="currentColor" />
                                         </div>
-                                        <span className="text-sm font-medium text-gray-400 group-hover:text-white transition-colors">Reanudar</span>
+                                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Reanudar</span>
                                     </button>
                                 ) : (
                                     // Botón "Pausar": visible cuando la sesión está activa (corriendo).
@@ -215,10 +215,10 @@ export default function Dashboard() {
                                         disabled={isPaused || loading}
                                         className="flex flex-col items-center gap-2 group"
                                     >
-                                        <div className="w-16 h-16 rounded-2xl bg-card-bg border border-white/10 hover:border-yellow-500/50 hover:bg-yellow-500/10 flex items-center justify-center text-white transition-all hover:scale-110">
+                                        <div className="w-16 h-16 rounded-2xl bg-white dark:bg-card-bg border border-gray-200 dark:border-white/10 hover:border-yellow-500/50 hover:bg-yellow-500/10 flex items-center justify-center text-gray-900 dark:text-white transition-all hover:scale-110">
                                             <Pause size={32} fill="currentColor" />
                                         </div>
-                                        <span className="text-sm font-medium text-gray-400 group-hover:text-white transition-colors">Pausar</span>
+                                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Pausar</span>
                                     </button>
                                 )}
 
@@ -227,10 +227,10 @@ export default function Dashboard() {
                                     onClick={handleEndClick}
                                     className="flex flex-col items-center gap-2 group ml-8"
                                 >
-                                    <div className="w-16 h-16 rounded-2xl bg-card-bg border border-white/10 hover:border-red-500/50 hover:bg-red-500/10 flex items-center justify-center text-white transition-all hover:scale-110">
+                                    <div className="w-16 h-16 rounded-2xl bg-white dark:bg-card-bg border border-gray-200 dark:border-white/10 hover:border-red-500/50 hover:bg-red-500/10 flex items-center justify-center text-gray-900 dark:text-white transition-all hover:scale-110">
                                         <Square size={28} fill="currentColor" />
                                     </div>
-                                    <span className="text-sm font-medium text-gray-400 group-hover:text-white transition-colors">Finalizar</span>
+                                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Finalizar</span>
                                 </button>
                             </>
                         )}
@@ -242,20 +242,20 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Tarjeta: Horas semanales acumuladas */}
                 <div className="glass-card p-6 flex flex-col items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 dark:text-blue-400 mb-3">
                         <Clock size={24} />
                     </div>
-                    <p className="text-gray-400 text-sm mb-1">Horas Semanales</p>
-                    <h3 className="text-2xl font-bold text-white">{formatTime(totalWeeklySeconds)}</h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Horas Semanales</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{formatTime(totalWeeklySeconds)}</h3>
                 </div>
 
                 {/* Tarjeta: Número de pausas de la sesión activa */}
                 <div className="glass-card p-6 flex flex-col items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-3">
                         <Coffee size={24} />
                     </div>
-                    <p className="text-gray-400 text-sm mb-1">Pausas Hoy</p>
-                    <h3 className="text-2xl font-bold text-white">{pauseCount ?? '--'}</h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Pausas Hoy</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{pauseCount ?? '--'}</h3>
                 </div>
 
                 {/* Tarjeta: Acceso directo a todas las sesiones */}
@@ -266,8 +266,8 @@ export default function Dashboard() {
                     <div className="w-12 h-12 rounded-full bg-primary-lime/10 flex items-center justify-center text-primary-lime mb-3 group-hover:bg-primary-lime/20 transition-colors">
                         <ClipboardList size={24} />
                     </div>
-                    <p className="text-gray-400 text-sm mb-1 group-hover:text-gray-300 transition-colors">Ver todas</p>
-                    <h3 className="text-2xl font-bold text-white">Sesiones</h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-1 group-hover:text-gray-900 dark:group-hover:text-gray-300 transition-colors">Ver todas</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Sesiones</h3>
                 </button>
             </div>
 
@@ -284,7 +284,7 @@ export default function Dashboard() {
                 title="Finalizar Jornada"
             >
                 <div className="space-y-6">
-                    <p className="text-gray-300">
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-normal break-words">
                         ¿Estás seguro de que deseas finalizar tu jornada laboral?
                         El tiempo total se registrará en tu historial.
                     </p>
@@ -292,7 +292,7 @@ export default function Dashboard() {
                         {/* Botón cancelar: cierra el modal */}
                         <button
                             onClick={() => setIsEndModalOpen(false)}
-                            className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                            className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                         >
                             Cancelar
                         </button>
@@ -319,8 +319,8 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-2">
-                        <h4 className="text-lg font-semibold text-white">¿Deseas recuperar tu sesión anterior?</h4>
-                        <p className="text-gray-400 max-w-sm mx-auto">
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">¿Deseas recuperar tu sesión anterior?</h4>
+                        <p className="text-gray-700 dark:text-gray-400 max-w-sm mx-auto">
                             Tienes una sesión que quedó abierta hace{' '}
                             <span className="text-primary-lime font-mono font-bold">{abandonedSession?.timeMessage}</span>.
                         </p>
@@ -330,7 +330,7 @@ export default function Dashboard() {
                         {/* Botón descartar: ignora la sesión y permite iniciar una nueva */}
                         <button
                             onClick={discardSession}
-                            className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+                            className="px-6 py-3 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
                         >
                             Ignorar y comenzar nueva
                         </button>

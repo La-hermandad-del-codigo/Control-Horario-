@@ -47,11 +47,11 @@ export const CalendarModal = ({ isOpen, onClose, sessions }: CalendarModalProps)
                 <div className="glass-card p-6 space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {selectedDate ? (
                         <>
-                            <div className="border-b border-white/10 pb-4">
-                                <h3 className="text-lg font-bold text-white capitalize">
+                            <div className="border-b border-gray-100 dark:border-white/10 pb-4">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
                                     {formatDate(selectedDate)}
                                 </h3>
-                                <p className="text-sm text-gray-400 mt-1">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                     {selectedDaySessions.length} sesión{selectedDaySessions.length !== 1 ? 'es' : ''}
                                 </p>
                             </div>
@@ -66,7 +66,7 @@ export const CalendarModal = ({ isOpen, onClose, sessions }: CalendarModalProps)
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center gap-2">
                                                     <Clock size={16} className="text-primary-lime" />
-                                                    <span className="text-white font-medium">
+                                                    <span className="text-gray-900 dark:text-white font-medium">
                                                         {new Date(session.start_time).toLocaleTimeString([], {
                                                             hour: '2-digit',
                                                             minute: '2-digit'
@@ -80,13 +80,13 @@ export const CalendarModal = ({ isOpen, onClose, sessions }: CalendarModalProps)
                                                             : 'Activa'}
                                                     </span>
                                                 </div>
-                                                <div className="px-2 py-1 rounded text-xs font-mono bg-gray-800 text-gray-400 border border-gray-700">
+                                                <div className="px-2 py-1 rounded text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                                     {session.total_duration?.split('.')[0] || '--:--:--'}
                                                 </div>
                                             </div>
 
                                             {session.notes && (
-                                                <p className="text-sm text-gray-400 italic mt-2">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 italic mt-2">
                                                     "{session.notes}"
                                                 </p>
                                             )}
@@ -97,10 +97,10 @@ export const CalendarModal = ({ isOpen, onClose, sessions }: CalendarModalProps)
                                                     <span>Pausas: --</span>
                                                 </div>
                                                 <div className={`px-2 py-0.5 rounded ${session.status === 'completed'
-                                                        ? 'bg-green-500/10 text-green-500'
-                                                        : session.status === 'active'
-                                                            ? 'bg-blue-500/10 text-blue-500'
-                                                            : 'bg-gray-500/10 text-gray-500'
+                                                    ? 'bg-green-500/10 text-green-500'
+                                                    : session.status === 'active'
+                                                        ? 'bg-blue-500/10 text-blue-500'
+                                                        : 'bg-gray-500/10 text-gray-500'
                                                     }`}>
                                                     {session.status === 'completed' ? 'Completada' :
                                                         session.status === 'active' ? 'Activa' :

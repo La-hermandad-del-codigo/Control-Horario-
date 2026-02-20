@@ -28,7 +28,7 @@ interface LayoutProps {
  */
 export const Layout = ({ children }: LayoutProps) => {
     return (
-        <div className="min-h-screen bg-dark-bg text-gray-100 font-sans selection:bg-primary-lime selection:text-dark-bg">
+        <div className="min-h-screen bg-transparent text-gray-900 dark:text-gray-100 font-sans selection:bg-primary-lime/30">
             {/* Barra de navegación superior */}
             <Navbar />
             {/* Contenedor principal del contenido de la página */}

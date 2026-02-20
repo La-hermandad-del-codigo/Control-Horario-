@@ -16,6 +16,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Sessions from './pages/Sessions';
 import { useAuth } from './hooks/useAuth';
+import { ThemeProvider } from './context/ThemeContext';
+import { Background } from './components/ui/Background';
 
 /**
  * Componente que define la estructura de rutas de la aplicación.
@@ -70,9 +72,12 @@ function AppRoutes() {
  */
 function App() {
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Background />
+        <AppRoutes />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

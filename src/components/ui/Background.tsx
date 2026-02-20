@@ -9,7 +9,7 @@ export const Background: React.FC = () => {
             />
 
             {/* Primary Decorative Orb */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary-lime/10 dark:bg-primary-lime/5 blur-[100px] animate-pulse" />
+            <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] rounded-full bg-primary-lime/10 dark:bg-primary-lime/5 blur-[100px] animate-pulse" />
 
             {/* Secondary Decorative Orb */}
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary-lime/5 dark:bg-primary-lime/[0.03] blur-[120px]" />
