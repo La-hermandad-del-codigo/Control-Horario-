@@ -55,6 +55,7 @@ export type Database = {
                     id: string
                     email: string
                     full_name: string | null
+                    provider: string
                     timezone: string
                     created_at: string
                     updated_at: string
@@ -63,6 +64,7 @@ export type Database = {
                     id: string
                     email: string
                     full_name?: string | null
+                    provider?: string
                     timezone?: string
                     created_at?: string
                     updated_at?: string
@@ -71,6 +73,7 @@ export type Database = {
                     id?: string
                     email?: string
                     full_name?: string | null
+                    provider?: string
                     timezone?: string
                     created_at?: string
                     updated_at?: string

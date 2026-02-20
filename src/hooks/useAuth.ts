@@ -69,12 +69,32 @@ export function useAuth() {
     };
 
     /**
-     * Registra un nuevo usuario y crea su perfil en la tabla `profiles`.
+     * Inicia sesión con Google OAuth 2.0.
+     *
+     * Redirige al usuario a la pantalla de consentimiento de Google.
+     * Al autorizar, Google devuelve un código que Supabase valida para
+     * crear o autenticar al usuario. El perfil se crea automáticamente
+     * mediante el trigger `handle_new_user` en la base de datos.
+     *
+     * @throws {Error} Si hay un error al iniciar el flujo OAuth.
+     */
+    const signInWithGoogle = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin,
+            },
+        });
+        if (error) throw error;
+    };
+
+    /**
+     * Registra un nuevo usuario con email y contraseña.
      *
      * Flujo:
      * 1. Crea el usuario en Supabase Auth con email, contraseña y nombre completo.
-     * 2. Si el registro es exitoso, inserta un registro en la tabla `profiles`
-     *    con el id del usuario, email y nombre completo.
+     * 2. El trigger `handle_new_user` en la base de datos crea automáticamente
+     *    el perfil en la tabla `profiles`.
      *
      * @param {string} email - Email del nuevo usuario.
      * @param {string} password - Contraseña del nuevo usuario.
@@ -95,23 +115,6 @@ export function useAuth() {
 
         if (error) throw error;
 
-        // Crear entrada en la tabla de perfiles asociada al usuario recién creado.
-        if (data.user) {
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                    id: data.user.id,
-                    email: email,
-                    full_name: fullName,
-                });
-
-            if (profileError) {
-                // Si falla la creación del perfil, el usuario auth ya existe.
-                // Se registra el error pero no se lanza excepción para no bloquear el registro.
-                console.error("Error creating profile:", profileError);
-            }
-        }
-
         return data;
     };
 
@@ -130,6 +133,7 @@ export function useAuth() {
         session,
         loading,
         signIn,
+        signInWithGoogle,
         signUp,
         signOut,
     };
