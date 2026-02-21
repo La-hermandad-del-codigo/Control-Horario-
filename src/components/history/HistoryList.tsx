@@ -22,7 +22,7 @@ type WorkSession = Database['public']['Tables']['work_sessions']['Row'];
  *   de las sesiones. Se incrementa desde el Dashboard al completar una sesión.
  */
 interface HistoryListProps {
-  refreshTrigger?: number;
+    refreshTrigger?: number;
 }
 
 /**
@@ -41,39 +41,39 @@ interface HistoryListProps {
  * - Con sesiones: grid de tarjetas con información de cada sesión.
  */
 export const HistoryList = ({ refreshTrigger = 0 }: HistoryListProps) => {
-// Desestructura las funciones y estado del hook de historial.
-const { sessions, loading, loadSessions, deleteSession, updateSession } = useHistory();
-// Sesión que se está editando actualmente (null = no hay edición activa).
-const [editingSession, setEditingSession] = useState<WorkSession | null>(null);
-// Estado del formulario de edición con los campos editables.
-const [editForm, setEditForm] = useState({
-    start_time: '',
-    end_time: '',
-    notes: ''
-});
-// Carga las sesiones al montar y cada vez que cambia refreshTrigger.
-// Carga las últimas 5 sesiones completadas.
-useEffect(() => {
-    void loadSessions(5);
-}, [loadSessions, refreshTrigger]);
-/**
- * Elimina una sesión después de confirmación del usuario.
- * Usa `window.confirm` como diálogo de confirmación simple.
- * @param {string} id - ID de la sesión a eliminar.
- */
-const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de eliminar esta sesión?')) {
-        await deleteSession(id);
-    }
-};
-/**
-     * Guarda los cambios de edición de una sesión.
-     *
-     * Convierte las fechas del formulario (hora local) de vuelta a ISO UTC
-     * antes de enviarlas a la base de datos.
-     *
-     * @param {React.FormEvent} e - Evento del formulario.
+    // Desestructura las funciones y estado del hook de historial.
+    const { sessions, loading, loadSessions, deleteSession, updateSession } = useHistory();
+    // Sesión que se está editando actualmente (null = no hay edición activa).
+    const [editingSession, setEditingSession] = useState<WorkSession | null>(null);
+    // Estado del formulario de edición con los campos editables.
+    const [editForm, setEditForm] = useState({
+        start_time: '',
+        end_time: '',
+        notes: ''
+    });
+    // Carga las sesiones al montar y cada vez que cambia refreshTrigger.
+    // Carga las últimas 5 sesiones completadas.
+    useEffect(() => {
+        void loadSessions(5);
+    }, [loadSessions, refreshTrigger]);
+    /**
+     * Elimina una sesión después de confirmación del usuario.
+     * Usa `window.confirm` como diálogo de confirmación simple.
+     * @param {string} id - ID de la sesión a eliminar.
      */
+    const handleDelete = async (id: string) => {
+        if (window.confirm('¿Estás seguro de eliminar esta sesión?')) {
+            await deleteSession(id);
+        }
+    };
+    /**
+         * Guarda los cambios de edición de una sesión.
+         *
+         * Convierte las fechas del formulario (hora local) de vuelta a ISO UTC
+         * antes de enviarlas a la base de datos.
+         *
+         * @param {React.FormEvent} e - Evento del formulario.
+         */
     const openEdit = (session: any) => {
         setEditingSession(session);
         // Función auxiliar para convertir ISO UTC a formato datetime-local (YYYY-MM-DDThh:mm).
@@ -110,7 +110,7 @@ const handleDelete = async (id: string) => {
         <div className="space-y-6">
             {/* Título de la sección */}
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">Historial de Sesiones</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Historial de Sesiones</h2>
             </div>
 
             {/* Renderizado condicional según el estado */}
@@ -131,29 +131,29 @@ const handleDelete = async (id: string) => {
                             <div className="space-y-2">
                                 <div className="flex items-center gap-3">
                                     {/* Fecha de la sesión */}
-                                    <div className="text-lg font-bold text-white">
+                                    <div className="text-lg font-bold text-gray-900 dark:text-white">
                                         {new Date(session.start_time).toLocaleDateString()}
                                     </div>
                                     {/* Duración total formateada */}
-                                    <div className="px-2 py-0.5 rounded text-xs font-mono bg-gray-800 text-gray-400 border border-gray-700">
+                                    <div className="px-2 py-0.5 rounded text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                         {session.total_duration?.split('.')[0] || 'Unknown'}
                                     </div>
                                 </div>
                                 {/* Horario de inicio y fin + conteo de pausas */}
-                                <div className="text-sm text-gray-400 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                <div className="text-sm text-gray-600 dark:text-gray-400 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <span>
                                         {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
                                         {session.end_time ? new Date(session.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Active'}
                                     </span>
                                     {/* Muestra conteo de pausas con ícono Coffee, siempre visible */}
-                                    <span className="flex items-center gap-1 text-yellow-500/80">
+                                    <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-500/80">
                                         <Coffee size={14} />
                                         {session.work_pauses?.[0]?.count || 0} pausa(s)
                                     </span>
                                 </div>
                                 {/* Notas de la sesión (si existen) */}
                                 {session.notes && (
-                                    <div className="text-sm text-gray-500 italic mt-1">"{session.notes}"</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-500 italic mt-1 font-medium">"{session.notes}"</div>
                                 )}
                             </div>
 
@@ -189,33 +189,33 @@ const handleDelete = async (id: string) => {
                 <form onSubmit={handleUpdate} className="space-y-4">
                     {/* Campo: Hora de inicio */}
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Inicio</label>
+                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Inicio</label>
                         <input
                             type="datetime-local"
                             required
                             value={editForm.start_time}
                             onChange={e => setEditForm({ ...editForm, start_time: e.target.value })}
-                            className="w-full bg-dark-bg border border-white/10 rounded-lg p-3 text-white focus:border-primary-lime outline-none"
+                            className="w-full bg-white dark:bg-dark-bg border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white focus:border-primary-lime outline-none"
                         />
                     </div>
                     {/* Campo: Hora de fin */}
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Fin</label>
+                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Fin</label>
                         <input
                             type="datetime-local"
                             required
                             value={editForm.end_time}
                             onChange={e => setEditForm({ ...editForm, end_time: e.target.value })}
-                            className="w-full bg-dark-bg border border-white/10 rounded-lg p-3 text-white focus:border-primary-lime outline-none"
+                            className="w-full bg-white dark:bg-dark-bg border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white focus:border-primary-lime outline-none"
                         />
                     </div>
                     {/* Campo: Notas */}
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Notas</label>
+                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Notas</label>
                         <textarea
                             value={editForm.notes}
                             onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
-                            className="w-full bg-dark-bg border border-white/10 rounded-lg p-3 text-white focus:border-primary-lime outline-none min-h-[100px]"
+                            className="w-full bg-white dark:bg-dark-bg border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white focus:border-primary-lime outline-none min-h-[100px]"
                             placeholder="Notas opcionales..."
                         />
                     </div>
@@ -224,7 +224,7 @@ const handleDelete = async (id: string) => {
                         <button
                             type="button"
                             onClick={() => setEditingSession(null)}
-                            className="px-4 py-2 text-gray-300 hover:text-white"
+                            className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
                         >
                             Cancelar
                         </button>
@@ -238,4 +238,5 @@ const handleDelete = async (id: string) => {
                 </form>
             </Modal>
         </div>
-    );}
+    );
+}

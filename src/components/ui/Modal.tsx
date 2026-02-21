@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 
 // useEffect: hook para ejecutar efectos secundarios (bloquear/desbloquear scroll del body).
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * Props del componente Modal.
@@ -34,7 +35,7 @@ interface ModalProps {
  * @returns {JSX.Element | null} El modal renderizado, o null si no está abierto.
  */
 export const Modal = ({ isOpen, onClose, title, children, size = 'default' }: ModalProps) => {
-  // Efecto para controlar el scroll del body.
+    // Efecto para controlar el scroll del body.
     // Cuando el modal se abre, bloquea el scroll. Cuando se cierra o el componente
     // se desmonta, restaura el scroll normal.
     useEffect(() => {
@@ -52,23 +53,30 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'default' }: Mo
     // Si el modal no está abierto, no renderiza nada.
     if (!isOpen) return null;
 
-    const maxWidthClass = size === 'large' ? 'max-w-6xl' : 'max-w-lg';
+    const maxWidthClass = size === 'large' ? 'max-w-6xl' : 'max-w-[600px]';
 
-    return (
+    return createPortal(
         // Overlay: cubre toda la pantalla con fondo negro semitransparente y desenfoque.
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className={`glass-card w-full ${maxWidthClass} overflow-hidden flex flex-col max-h-[90vh]`}>
-                <div className="flex items-center justify-between p-6 border-b border-white/10">
-                    <h3 className="text-xl font-bold text-white">{title}</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-                        <X size={24} />
+        // Se usa -inset-10 para asegurar que el fondo cubra incluso si hay variaciones de tamaño del viewport.
+        <div className="fixed -inset-10 z-[1000] flex items-center justify-center p-14 bg-black/60 backdrop-blur-sm transition-all duration-300">
+            <div className={`glass-card w-full ${maxWidthClass} overflow-hidden flex flex-col max-h-[90vh] shadow-2xl border-gray-200/50 dark:border-white/10`}>
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-white/10 bg-white/50 dark:bg-transparent">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h3>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                        aria-label="Cerrar modal"
+                    >
+                        <X size={20} />
                     </button>
                 </div>
-                {/* Cuerpo del modal: contenido scrolleable */}
-                <div className="p-6 overflow-y-auto">
+                {/* Cuerpo del modal: contenido scrolleable con fondo que ayuda al contraste */}
+                <div className="p-6 overflow-y-auto bg-white/30 dark:bg-transparent">
                     {children}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
