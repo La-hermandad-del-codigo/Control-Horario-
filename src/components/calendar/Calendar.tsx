@@ -118,7 +118,7 @@ export const Calendar = ({ sessions, onDayClick }: CalendarProps) => {
                     onClick={() => onDayClick(cellDate, daySessions)}
                     className={`
                         aspect-square p-2 rounded-lg transition-all relative
-                        ${isCurrentMonth ? 'text-white hover:bg-white/10' : 'text-gray-600'}
+                        ${isCurrentMonth ? 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10' : 'text-gray-400 dark:text-gray-600'}
                         ${today ? 'ring-2 ring-primary-lime' : ''}
                         ${daySessions.length > 0 ? 'cursor-pointer' : 'cursor-default'}
                     `}
@@ -138,25 +138,25 @@ export const Calendar = ({ sessions, onDayClick }: CalendarProps) => {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                     {monthNames[month]} {year}
                 </h2>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={goToToday}
-                        className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                        className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
                     >
                         Hoy
                     </button>
                     <button
                         onClick={goToPreviousMonth}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                        className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-all"
                     >
                         <ChevronLeft size={20} />
                     </button>
                     <button
                         onClick={goToNextMonth}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                        className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-all"
                     >
                         <ChevronRight size={20} />
                     </button>
@@ -168,7 +168,7 @@ export const Calendar = ({ sessions, onDayClick }: CalendarProps) => {
                 {/* Day names */}
                 <div className="grid grid-cols-7 gap-2">
                     {dayNames.map(name => (
-                        <div key={name} className="text-center text-sm font-medium text-gray-400 py-2">
+                        <div key={name} className="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">
                             {name}
                         </div>
                     ))}
@@ -181,7 +181,7 @@ export const Calendar = ({ sessions, onDayClick }: CalendarProps) => {
             </div>
 
             {/* Legend */}
-            <div className="flex items-center justify-center gap-6 text-sm text-gray-400">
+            <div className="flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
                     <span>1 sesión</span>
